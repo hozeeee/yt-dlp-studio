@@ -22,19 +22,11 @@ import {
   uploadCookieSchema,
 } from '../schemas'
 import { AUTH_COOKIE } from '../services/auth'
+import { mimeType } from '../services/library'
 import { validateExternalUrl } from '../utils/url'
 
 function jsonError(c: Context, message: string, status = 400, details?: unknown) {
   return c.json({ error: message, details }, status as 400)
-}
-
-function decodePath(input: string) {
-  try {
-    return decodeURIComponent(input)
-  }
-  catch {
-    throw new Error('Invalid encoded path')
-  }
 }
 
 async function bodyJson(c: Context) {
@@ -184,8 +176,9 @@ export function createApi(services: AppServices) {
     return c.json({ ok: true })
   })
 
-  api.get('/library/content/*', async (c) => {
-    const relative = decodePath(c.req.param('*') ?? '')
+  // Hono does not expose unnamed wildcards via param(), and already decodes named params
+  api.get('/library/content/:path{.+}', async (c) => {
+    const relative = c.req.param('path')
     const file = services.library.resolve(relative)
     if (!file)
       return jsonError(c, 'Invalid path')
@@ -202,6 +195,8 @@ export function createApi(services: AppServices) {
     const range = c.req.header('range')
     const disposition = c.req.query('download') === '1' ? 'attachment' : 'inline'
     const headers: Record<string, string> = {
+      'Content-Type': mimeType(file),
+      'X-Content-Type-Options': 'nosniff',
       'Accept-Ranges': 'bytes',
       'Content-Disposition': `${disposition}; filename*=UTF-8''${encodeURIComponent(path.basename(file))}`,
       'Cache-Control': 'private, max-age=3600',

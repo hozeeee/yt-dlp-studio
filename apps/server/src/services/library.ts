@@ -29,6 +29,36 @@ const TYPES: Record<string, LibraryEntryType> = {
   '.lrc': 'subtitle',
 }
 
+// Only media types are served with a real MIME type, anything else is an opaque download
+const MIME: Record<string, string> = {
+  '.mp4': 'video/mp4',
+  '.m4v': 'video/mp4',
+  '.mkv': 'video/x-matroska',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.avi': 'video/x-msvideo',
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.flac': 'audio/flac',
+  '.wav': 'audio/wav',
+  '.opus': 'audio/ogg',
+  '.ogg': 'audio/ogg',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.vtt': 'text/vtt; charset=utf-8',
+  '.srt': 'text/plain; charset=utf-8',
+  '.ass': 'text/plain; charset=utf-8',
+  '.lrc': 'text/plain; charset=utf-8',
+}
+
+export function mimeType(file: string) {
+  return MIME[path.extname(file).toLowerCase()] ?? 'application/octet-stream'
+}
+
 const TYPE_ORDER: Record<LibraryEntryType, number> = {
   directory: 0,
   video: 1,
