@@ -22,7 +22,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build:single
       - run: sha256sum dist/yt-dlp-studio.mjs > dist/yt-dlp-studio.mjs.sha256
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/yt-dlp-studio.mjs
