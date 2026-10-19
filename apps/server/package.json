@@ -1,0 +1,23 @@
+{
+  "name": "@yt-dlp-studio/server",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "yt-dlp Studio backend service",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "build": "tsx scripts/build.ts",
+    "build:single": "tsx scripts/build.ts --single",
+    "start": "node dist/index.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.5",
+    "@yt-dlp-studio/shared": "workspace:*",
+    "hono": "^4.13.13",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

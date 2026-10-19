@@ -1,0 +1,33 @@
+{
+  "name": "yt-dlp-studio",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.7",
+  "description": "A self-hosted web UI for yt-dlp, built with Node.js and React.",
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "dev:server": "pnpm -F @yt-dlp-studio/server dev",
+    "dev:web": "pnpm -F @yt-dlp-studio/web dev",
+    "build": "pnpm -F @yt-dlp-studio/web build && pnpm -F @yt-dlp-studio/server build",
+    "build:single": "pnpm -F @yt-dlp-studio/web build && pnpm -F @yt-dlp-studio/server build:single",
+    "build:all": "pnpm -F @yt-dlp-studio/web build && pnpm -F @yt-dlp-studio/server build && pnpm -F @yt-dlp-studio/server build:single",
+    "start": "node apps/server/dist/index.mjs",
+    "start:single": "node dist/yt-dlp-studio.mjs",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^9.5.1",
+    "@eslint-react/eslint-plugin": "^5.27.2",
+    "@types/node": "^26.6.5",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3"
+  }
+}

@@ -1,0 +1,30 @@
+name: Release standalone build
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10.34.7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:single
+      - run: sha256sum dist/yt-dlp-studio.mjs > dist/yt-dlp-studio.mjs.sha256
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/yt-dlp-studio.mjs
+            dist/yt-dlp-studio.mjs.sha256
+          generate_release_notes: true

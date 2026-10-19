@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --color-brand-50: #f0f7ff;
+  --color-brand-100: #dfeeff;
+  --color-brand-200: #b9ddff;
+  --color-brand-300: #7bc3ff;
+  --color-brand-400: #35a5ff;
+  --color-brand-500: #0b87f5;
+  --color-brand-600: #0069d3;
+  --color-brand-700: #0054ab;
+  --color-brand-800: #06488d;
+  --color-brand-900: #0b3c74;
+  --color-brand-950: #07264d;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.03), 0 8px 30px rgb(15 23 42 / 0.04);
+  --shadow-float: 0 20px 60px rgb(0 0 0 / 0.16);
+}
+
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.dark * {
+  scrollbar-color: #334155 transparent;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f6f8fb;
+  color: #172033;
+}
+
+.dark body {
+  background: #0b0d12;
+  color: #e8ecf3;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgb(11 135 245 / 0.22);
+}
+
+@layer components {
+  .surface {
+    @apply rounded-2xl border border-slate-200/80 bg-white shadow-soft dark:border-white/8 dark:bg-[#12151c];
+  }
+
+  .surface-muted {
+    @apply rounded-xl border border-slate-200/70 bg-slate-50/70 dark:border-white/7 dark:bg-white/3;
+  }
+
+  .input-base {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-600;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-3.5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-500 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/9;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45 dark:text-slate-400 dark:hover:bg-white/7 dark:hover:text-slate-100;
+  }
+
+  .icon-btn {
+    @apply inline-flex size-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:active:scale-100 dark:text-slate-400 dark:hover:bg-white/8 dark:hover:text-slate-100;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
+  }
+
+  .section-title {
+    @apply text-base font-semibold tracking-tight text-slate-900 dark:text-white;
+  }
+}
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* `backwards` so no transform is left behind: a transformed ancestor would trap `position: fixed` children */
+.page-enter {
+  animation: enter 220ms ease-out backwards;
+}
+
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-overlay-in {
+  animation: overlay-in 160ms ease-out;
+}
+
+.animate-dialog-in {
+  animation: dialog-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-drawer-in {
+  animation: drawer-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-pop-in {
+  animation: pop-in 140ms ease-out;
+}
+
+@keyframes indeterminate {
+  from { left: -35%; }
+  to { left: 100%; }
+}
+
+.animate-indeterminate {
+  animation: indeterminate 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .animate-overlay-in,
+  .animate-dialog-in,
+  .animate-drawer-in,
+  .animate-pop-in {
+    animation: none;
+  }
+
+  .animate-indeterminate {
+    animation-duration: 3s;
+  }
+}

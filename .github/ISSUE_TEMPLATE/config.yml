@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: yt-dlp 支持
+    url: https://github.com/yt-dlp/yt-dlp/issues
+    about: 特定网站的解析或下载问题，请先确认是否为 yt-dlp 本身的问题
