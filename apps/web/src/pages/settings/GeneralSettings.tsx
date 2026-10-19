@@ -1,6 +1,7 @@
 import type { AppSettings } from '@yt-dlp-studio/shared'
 import { DownloadOptionsForm } from '../../components/DownloadOptionsForm'
 import { Field } from '../../components/Field'
+import { OutputTemplateField } from '../../components/OutputTemplateField'
 import { Section } from '../../components/Section'
 import { Switch } from '../../components/Switch'
 
@@ -12,8 +13,8 @@ export function GeneralSettings({ value, onChange, locked }: { value: AppSetting
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="下载目录" hint={locked.includes('downloadDir') ? '由环境变量锁定' : '服务器上的绝对或相对路径'}><input className="input-base" disabled={locked.includes('downloadDir')} value={value.downloadDir} onChange={event => set('downloadDir', event.target.value)} /></Field>
           <Field label="最大并发下载"><input className="input-base" type="number" min="1" max="20" value={value.maxConcurrent} disabled={locked.includes('maxConcurrent')} onChange={event => set('maxConcurrent', Number(event.target.value))} /></Field>
-          <Field label="普通输出模板"><input className="input-base font-mono text-xs" value={value.outputTemplate} onChange={event => set('outputTemplate', event.target.value)} /></Field>
-          <Field label="播放列表输出模板"><input className="input-base font-mono text-xs" value={value.outputTemplatePlaylist} onChange={event => set('outputTemplatePlaylist', event.target.value)} /></Field>
+          <OutputTemplateField label="普通输出模板" scope="single" value={value.outputTemplate} onChange={next => set('outputTemplate', next)} emptyHint={<span className="text-amber-600 dark:text-amber-400">请填写模板，或点击「常用」选择常用格式</span>} />
+          <OutputTemplateField label="播放列表输出模板" scope="playlist" value={value.outputTemplatePlaylist} onChange={next => set('outputTemplatePlaylist', next)} emptyHint="留空时使用普通输出模板" />
           <Field label="完成记录自动清理" hint="小时，0 表示永不"><input className="input-base" type="number" min="0" value={value.autoClearHours} onChange={event => set('autoClearHours', Number(event.target.value))} /></Field>
           <Field label="删除任务时的默认行为">
             <select className="input-base" value={value.deleteFiles} onChange={event => set('deleteFiles', event.target.value as AppSettings['deleteFiles'])}>

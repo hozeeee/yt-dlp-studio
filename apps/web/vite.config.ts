@@ -7,7 +7,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: '::',
-    port: 5173,
+    port: 8585,
+    strictPort: true,
     proxy: {
       '/api': 'http://localhost:8686',
     },

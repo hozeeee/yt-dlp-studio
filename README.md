@@ -34,7 +34,7 @@ pnpm dev
 
 开发模式会同时启动：
 
-- Web：`http://localhost:5173`
+- Web：`http://localhost:8585`
 - API：`http://localhost:8686`
 
 也可以分别启动：

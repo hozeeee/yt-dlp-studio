@@ -3,6 +3,8 @@ import clsx from 'clsx'
 import { ChevronDown, FileAudio, FileImage, Film, Settings2 } from 'lucide-react'
 import { CookieSelect } from './CookieSelect'
 import { Field } from './Field'
+import { FormatSelectorField } from './FormatSelectorField'
+import { OutputTemplateField } from './OutputTemplateField'
 import { Switch } from './Switch'
 
 interface Props {
@@ -23,7 +25,8 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
   ]
 
   return (
-    <div className="space-y-5">
+    // Sized by its container: the form lives in a narrow sidebar, dialogs and the wide settings page
+    <div className="@container space-y-5">
       <div>
         <label className="field-label">下载类型</label>
         <div className="grid grid-cols-3 gap-2">
@@ -37,7 +40,7 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
       </div>
 
       {value.kind === 'video' && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 @xs:grid-cols-3">
           <Field label="清晰度">
             <select className="input-base" value={value.quality} onChange={event => set('quality', event.target.value as DownloadOptions['quality'])}>
               <option value="best">最佳可用</option>
@@ -71,7 +74,7 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
 
       {value.kind === 'audio' && (
         <Field label="音频格式">
-          <select className="input-base sm:max-w-xs" value={value.audioFormat} onChange={event => set('audioFormat', event.target.value as DownloadOptions['audioFormat'])}>
+          <select className="input-base @md:max-w-xs" value={value.audioFormat} onChange={event => set('audioFormat', event.target.value as DownloadOptions['audioFormat'])}>
             <option value="best">最佳 / 原始格式</option>
             <option value="mp3">MP3</option>
             <option value="m4a">M4A</option>
@@ -82,7 +85,7 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
         </Field>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 @md:grid-cols-2">
         <Field label="保存到子目录" hint="相对于下载目录">
           <input className="input-base" value={value.folder ?? ''} onChange={event => set('folder', event.target.value)} placeholder="例如：音乐/收藏" />
         </Field>
@@ -105,16 +108,12 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
             <ChevronDown className="transition group-open:rotate-180" size={16} />
           </summary>
           <div className="space-y-5 border-t border-slate-100 p-4 dark:border-white/7">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="自定义 format selector" hint="设置后覆盖清晰度、容器和编码偏好">
-                <input className="input-base font-mono text-xs" value={value.format ?? ''} onChange={event => set('format', event.target.value)} placeholder="例如：bv*[height<=1080]+ba/b" />
-              </Field>
+            <div className="grid gap-4 @2xl:grid-cols-2">
+              <FormatSelectorField value={value.format ?? ''} onChange={next => set('format', next)} />
               <Field label="下载时间段" hint="需要 ffmpeg，例如 00:01:00-00:02:30">
-                <input className="input-base font-mono text-xs" value={value.section ?? ''} onChange={event => set('section', event.target.value)} placeholder="*00:01:00-00:02:30" />
+                <input className="input-base font-mono text-xs" value={value.section ?? ''} onChange={event => set('section', event.target.value)} placeholder="00:01:00-00:02:30" />
               </Field>
-              <Field label="输出模板" hint="留空时使用全局设置">
-                <input className="input-base font-mono text-xs" value={value.outputTemplate ?? ''} onChange={event => set('outputTemplate', event.target.value)} placeholder="%(title)s [%(id)s].%(ext)s" />
-              </Field>
+              <OutputTemplateField label="输出模板" scope="any" value={value.outputTemplate ?? ''} onChange={next => set('outputTemplate', next)} placeholder="留空时使用全局设置" emptyHint="留空时使用全局设置" />
               {value.subtitles && (
                 <Field label="字幕语言" hint="支持 yt-dlp 语言匹配表达式">
                   <input className="input-base" value={value.subtitleLangs} onChange={event => set('subtitleLangs', event.target.value)} placeholder="zh.*,en.*" />
@@ -123,7 +122,7 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
             </div>
 
             {value.kind !== 'thumbnail' && (
-              <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-3 @xs:grid-cols-2">
                 <Switch checked={value.subtitles} onChange={next => set('subtitles', next)} label="下载字幕与自动字幕" />
                 <Switch checked={value.embedSubtitles} onChange={next => set('embedSubtitles', next)} label="嵌入字幕" />
                 <Switch checked={value.embedMetadata} onChange={next => set('embedMetadata', next)} label="嵌入元数据" />
