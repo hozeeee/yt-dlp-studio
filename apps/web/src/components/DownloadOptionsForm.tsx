@@ -1,6 +1,8 @@
 import type { DownloadOptions } from '@yt-dlp-studio/shared'
 import clsx from 'clsx'
 import { ChevronDown, FileAudio, FileImage, Film, Settings2 } from 'lucide-react'
+import { CookieSelect } from './CookieSelect'
+import { Field } from './Field'
 import { Switch } from './Switch'
 
 interface Props {
@@ -8,9 +10,11 @@ interface Props {
   onChange: (value: DownloadOptions) => void
   compact?: boolean
   allowCustomArgs?: boolean
+  /** Link being downloaded, helps picking the matching cookies file */
+  url?: string
 }
 
-export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs }: Props) {
+export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs, url }: Props) {
   const set = <K extends keyof DownloadOptions>(key: K, next: DownloadOptions[K]) => onChange({ ...value, [key]: next })
   const kinds = [
     { id: 'video' as const, label: '视频', icon: Film },
@@ -89,6 +93,8 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs 
         )}
       </div>
 
+      <CookieSelect value={value.cookies} onChange={next => set('cookies', next)} url={url} />
+
       {!compact && (
         <details className="group rounded-xl border border-slate-200/80 dark:border-white/8">
           <summary className="flex list-none items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -138,15 +144,5 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs 
         </details>
       )}
     </div>
-  )
-}
-
-function Field({ label, hint, children }: { label: string, hint?: string, children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="field-label">{label}</span>
-      {children}
-      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
-    </label>
   )
 }

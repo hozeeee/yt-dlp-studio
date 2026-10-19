@@ -1,8 +1,10 @@
-import type { CookieFile } from '@yt-dlp-studio/shared'
+import type { AppSettings, CookieFile } from '@yt-dlp-studio/shared'
 import type { EventBus } from './events'
+import type { CookieSource } from './ytdlp/args'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { COOKIES_NONE } from '@yt-dlp-studio/shared'
 import { pathExists, writeFileAtomic } from '../utils/fs'
 import { createId } from '../utils/id'
 import { createLogger } from '../utils/logger'
@@ -101,6 +103,26 @@ export class CookieService {
 
   get hasEnabled() {
     return this.store.data.files.some(file => file.enabled)
+  }
+
+  /**
+   * Resolve the cookies of a download: an explicitly chosen file (used even when it is
+   * disabled for the merged file), none at all, or whatever the global settings say.
+   */
+  resolve(selection: string | undefined, settings: AppSettings): CookieSource | undefined {
+    if (selection === COOKIES_NONE)
+      return undefined
+    if (selection) {
+      const file = this.store.data.files.find(item => item.id === selection)
+      if (!file)
+        throw new Error('The selected cookies file no longer exists, choose another one in the download options')
+      return { file: this.fileOf(file.id) }
+    }
+    if (settings.cookiesMode === 'file' && this.hasEnabled)
+      return { file: this.mergedFile }
+    if (settings.cookiesMode === 'browser' && settings.cookiesBrowser)
+      return { browser: settings.cookiesBrowser }
+    return undefined
   }
 
   /** Add a file. A file with the same name is replaced, so re-exporting a site is easy. */

@@ -24,6 +24,9 @@ const MIME: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
+  '.txt': 'text/plain; charset=utf-8',
+  '.zip': 'application/zip',
+  '.xpi': 'application/x-xpinstall',
 }
 
 async function collectAssets(dir: string, relative = '', assets: Record<string, Asset> = {}) {

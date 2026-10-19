@@ -22,6 +22,9 @@ export type VideoCodec = 'auto' | 'h264' | 'h265' | 'av1' | 'vp9'
 
 export type AudioFormat = 'best' | 'mp3' | 'm4a' | 'opus' | 'flac' | 'wav'
 
+/** `DownloadOptions.cookies` value that disables cookies for a download */
+export const COOKIES_NONE = 'none'
+
 export interface DownloadOptions {
   kind: DownloadKind
   quality: VideoQuality
@@ -47,6 +50,11 @@ export interface DownloadOptions {
   sponsorBlock: boolean
   /** Only used when the URL points to a playlist, 0 = all */
   playlistLimit: number
+  /**
+   * Cookies used by this download: empty follows the global settings,
+   * `none` disables cookies, otherwise the id of an uploaded cookies file
+   */
+  cookies?: string
   /** Extra raw command line args, only honored when allowed by settings */
   extraArgs?: string
 }

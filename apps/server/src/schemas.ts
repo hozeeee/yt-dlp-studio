@@ -23,6 +23,7 @@ export const downloadOptionsSchema = z.object({
   splitChapters: z.boolean(),
   sponsorBlock: z.boolean(),
   playlistLimit: z.number().int().min(0).max(100000),
+  cookies: optionalText(100),
   extraArgs: optionalText(),
 })
 
@@ -80,6 +81,8 @@ export const infoRequestSchema = z.object({
   url: urlSchema,
   /** Fetch playlist entries flat (fast) */
   flat: z.boolean().optional(),
+  /** Same as `DownloadOptions.cookies` */
+  cookies: optionalText(100),
 })
 
 export const createSubscriptionSchema = z.object({

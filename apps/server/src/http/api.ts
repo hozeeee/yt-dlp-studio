@@ -115,7 +115,8 @@ export function createApi(services: AppServices) {
   api.post('/info', async (c) => {
     const request = infoRequestSchema.parse(await bodyJson(c))
     const url = await validateExternalUrl(request.url)
-    return c.json(await services.info.get(url, request.flat ?? true))
+    // Kill yt-dlp when the browser stops waiting (canceled preview / left the page)
+    return c.json(await services.info.get(url, { flat: request.flat ?? true, cookies: request.cookies, signal: c.req.raw.signal }))
   })
 
   api.get('/tasks', c => c.json(services.queue.list()))

@@ -46,7 +46,8 @@ export class SubscriptionService {
   }
 
   async create(request: CreateSubscriptionRequest) {
-    const media = await this.info.get(request.url, true, this.settings.value.subscriptionScanLimit)
+    const options = mergeDownloadOptions(this.settings.value.defaultOptions, request.options)
+    const media = await this.info.get(request.url, { limit: this.settings.value.subscriptionScanLimit, cookies: options.cookies })
     const now = Date.now()
     const existing = this.store.data.subscriptions.find(item => item.url === request.url)
     if (existing)
@@ -60,7 +61,7 @@ export class SubscriptionService {
       thumbnail: media.thumbnail ?? media.entries?.[0]?.thumbnail,
       enabled: true,
       interval: request.interval ?? this.settings.value.subscriptionInterval,
-      options: mergeDownloadOptions(this.settings.value.defaultOptions, request.options),
+      options,
       createdAt: now,
       lastCheckedAt: now,
       seenCount: seenIds.length,
@@ -113,7 +114,7 @@ export class SubscriptionService {
     item.checking = true
     this.emit(item)
     try {
-      const media = await this.info.get(item.url, true, this.settings.value.subscriptionScanLimit)
+      const media = await this.info.get(item.url, { limit: this.settings.value.subscriptionScanLimit, cookies: item.options.cookies })
       const entries = media.entries ?? [{
         id: media.id,
         url: media.url,

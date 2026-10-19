@@ -24,6 +24,9 @@ const TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
+  '.txt': 'text/plain; charset=utf-8',
+  '.zip': 'application/zip',
+  '.xpi': 'application/x-xpinstall',
 }
 
 function headers(c: Context, file: string) {

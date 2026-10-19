@@ -18,23 +18,26 @@ const PROGRESS_TEMPLATE = [
 
 const INFO_FIELDS = 'id,title,thumbnail,uploader,channel,duration,extractor_key,webpage_url,format_id'
 
+/** Where yt-dlp reads cookies from, resolved from settings and the download options */
+export type CookieSource = { file: string } | { browser: string }
+
 export interface CommonArgsContext {
   settings: AppSettings
-  cookiesFile?: string
+  cookies?: CookieSource
   ffmpegPath?: string
 }
 
 /** Args shared by info extraction and downloads (network, auth, binaries) */
-export function buildCommonArgs({ settings, cookiesFile, ffmpegPath }: CommonArgsContext) {
+export function buildCommonArgs({ settings, cookies, ffmpegPath }: CommonArgsContext) {
   const args: string[] = []
   if (settings.proxy)
     args.push('--proxy', settings.proxy)
   if (settings.userAgent)
     args.push('--user-agent', settings.userAgent)
-  if (settings.cookiesMode === 'file' && cookiesFile)
-    args.push('--cookies', cookiesFile)
-  else if (settings.cookiesMode === 'browser' && settings.cookiesBrowser)
-    args.push('--cookies-from-browser', settings.cookiesBrowser)
+  if (cookies && 'file' in cookies)
+    args.push('--cookies', cookies.file)
+  else if (cookies)
+    args.push('--cookies-from-browser', cookies.browser)
   if (ffmpegPath && ffmpegPath !== 'ffmpeg')
     args.push('--ffmpeg-location', ffmpegPath)
   if (settings.globalArgs)
@@ -126,6 +129,8 @@ export interface DownloadArgsContext extends CommonArgsContext {
   url: string
   options: DownloadOptions
   outputDir: string
+  /** Intermediate files (`.part`, fragments) are kept here until the download finishes */
+  tempDir: string
   playlist?: TaskPlaylistInfo
   archiveFile?: string
 }
@@ -153,6 +158,8 @@ export function buildDownloadArgs(ctx: DownloadArgsContext) {
     `after_move:${MARK_FILE}%(filepath)s`,
     '-P',
     ctx.outputDir,
+    '-P',
+    `temp:${ctx.tempDir}`,
     '-o',
     applyPlaylistTemplate(template, ctx.playlist),
     '--retries',

@@ -1,23 +1,18 @@
 import type { AppSettings, CookieFile } from '@yt-dlp-studio/shared'
 import clsx from 'clsx'
-import { AlertTriangle, Cookie, ExternalLink, FileText, Puzzle, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, Cookie, FileText, Trash2, Upload } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { HelpTip } from '../../../components/HelpTip'
 import { Section } from '../../../components/Section'
 import { Spinner } from '../../../components/Spinner'
 import { Switch } from '../../../components/Switch'
 import { api, json } from '../../../lib/api'
+import { EXTENSIONS } from '../../../lib/cookieExtension'
 import { formatBytes, formatDate } from '../../../lib/format'
 import { useAppStore } from '../../../stores/app'
 import { confirmDialog } from '../../../stores/dialog'
 import { toast } from '../../../stores/toast'
-
-/** "Get cookies.txt LOCALLY": open source and exports without sending cookies anywhere */
-const EXTENSIONS = [
-  { label: 'Chrome / Edge', href: 'https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc' },
-  { label: 'Firefox', href: 'https://addons.mozilla.org/en-US/firefox/addon/get-cookies-txt-locally/' },
-]
-const EXTENSION_REPO = 'https://github.com/kairi003/Get-cookies.txt-LOCALLY'
+import { ExtensionLinks } from './CookieExtension'
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
@@ -104,7 +99,7 @@ function CookieHelp() {
                 <a className="text-brand-600 hover:underline dark:text-brand-400" href={item.href} target="_blank" rel="noreferrer">{item.label}</a>
               </span>
             ))}
-            ）。
+            ）。无法访问扩展商店时，点击「离线安装」使用内置安装包。
           </li>
           <li>在浏览器中打开目标网站并登录账号。</li>
           <li>在该网站页面点击插件图标，格式选择 Netscape，点击「Export」下载 cookies.txt。</li>
@@ -118,31 +113,6 @@ function CookieHelp() {
         </ul>
       </div>
     </HelpTip>
-  )
-}
-
-function ExtensionLinks() {
-  return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-slate-50/70 p-4 sm:flex-row sm:items-center dark:border-white/7 dark:bg-white/3">
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"><Puzzle size={18} /></div>
-        <div className="min-w-0 text-sm">
-          <div className="font-medium text-slate-800 dark:text-slate-100">还没有 cookies.txt？</div>
-          <div className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
-            安装开源插件 Get cookies.txt LOCALLY，在已登录的网站上一键导出。
-            <a className="ml-1 text-brand-600 hover:underline dark:text-brand-400" href={EXTENSION_REPO} target="_blank" rel="noreferrer">源码</a>
-          </div>
-        </div>
-      </div>
-      <div className="flex shrink-0 flex-wrap gap-2">
-        {EXTENSIONS.map(item => (
-          <a key={item.href} className="btn-secondary py-2 text-xs" href={item.href} target="_blank" rel="noreferrer">
-            <ExternalLink size={14} />
-            {item.label}
-          </a>
-        ))}
-      </div>
-    </div>
   )
 }
 

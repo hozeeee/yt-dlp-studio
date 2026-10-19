@@ -9,6 +9,11 @@ dist/
 data/
 downloads/
 
+# yt-dlp intermediate files, in case a download ever runs outside the download directory
+*.part
+*.part-Frag*
+*.ytdl
+
 # logs
 *.log
 npm-debug.log*

@@ -115,7 +115,7 @@ export function SubscriptionsPage() {
           </div>
           <div className="border-t border-slate-100 pt-5 dark:border-white/7">
             <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-200">下载选项</h3>
-            <DownloadOptionsForm value={options} onChange={setOptions} compact />
+            <DownloadOptionsForm value={options} onChange={setOptions} compact url={url.trim()} />
           </div>
         </form>
       </Modal>

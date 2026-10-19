@@ -1,6 +1,7 @@
 import type { AddDownloadsResponse, DownloadOptions, MediaInfo } from '@yt-dlp-studio/shared'
-import { Clipboard, Download, Link2, ListVideo, Search, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import type { PreviewState } from './download/PreviewPanel'
+import { Clipboard, Download, Eye, Link2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { DownloadOptionsForm } from '../components/DownloadOptionsForm'
 import { PageHeader } from '../components/PageHeader'
@@ -8,24 +9,35 @@ import { Spinner } from '../components/Spinner'
 import { YtdlpRequired } from '../components/YtdlpRequired'
 import { api, json } from '../lib/api'
 import { useYtdlpReady } from '../lib/binaries'
-import { formatDuration } from '../lib/format'
 import { useAppStore } from '../stores/app'
 import { toast } from '../stores/toast'
+import { PreviewPanel } from './download/PreviewPanel'
 
 export function DownloadPage() {
   const settings = useAppStore(state => state.settings)!
   const [input, setInput] = useState('')
-  const [info, setInfo] = useState<MediaInfo | null>(null)
+  const [preview, setPreview] = useState<PreviewState>({ status: 'idle' })
   const [options, setOptions] = useState<DownloadOptions>({ ...settings.defaultOptions })
-  const [analyzing, setAnalyzing] = useState(false)
   const [adding, setAdding] = useState(false)
+  const previewAbortRef = useRef<AbortController | null>(null)
   const navigate = useNavigate()
   const ready = useYtdlpReady()
   const urls = input.split(/\s+/).map(value => value.trim()).filter(Boolean)
+  const analyzing = preview.status === 'loading'
+
+  // Leaving the page stops the preview, the server then kills yt-dlp
+  useEffect(() => () => previewAbortRef.current?.abort(), [])
+
+  function resetPreview() {
+    previewAbortRef.current?.abort()
+    previewAbortRef.current = null
+    setPreview({ status: 'idle' })
+  }
 
   async function paste() {
     try {
       setInput(await navigator.clipboard.readText())
+      resetPreview()
     }
     catch {
       toast.error('无法读取剪贴板', '请手动粘贴链接')
@@ -35,18 +47,22 @@ export function DownloadPage() {
   async function analyze() {
     if (!urls[0] || !ready)
       return
-    setAnalyzing(true)
-    setInfo(null)
+    previewAbortRef.current?.abort()
+    const controller = new AbortController()
+    previewAbortRef.current = controller
+    setPreview({ status: 'loading', startedAt: Date.now() })
     try {
-      const media = await api<MediaInfo>('/info', json('POST', { url: urls[0], flat: true }))
-      setInfo(media)
-      toast.success('解析完成', media.type === 'playlist' ? `发现 ${media.playlistCount ?? media.entries?.length ?? 0} 个条目` : media.title)
+      const media = await api<MediaInfo>('/info', { ...json('POST', { url: urls[0], flat: true, cookies: options.cookies }), signal: controller.signal })
+      if (!controller.signal.aborted)
+        setPreview({ status: 'done', info: media })
     }
     catch (error) {
-      toast.error('解析失败', error instanceof Error ? error.message : String(error))
+      if (!controller.signal.aborted)
+        setPreview({ status: 'error', message: error instanceof Error ? error.message : String(error) })
     }
     finally {
-      setAnalyzing(false)
+      if (previewAbortRef.current === controller)
+        previewAbortRef.current = null
     }
   }
 
@@ -61,7 +77,7 @@ export function DownloadPage() {
       if (!result.tasks.length && result.errors.length)
         throw new Error(result.errors.map(item => item.error).join('\n'))
       setInput('')
-      setInfo(null)
+      resetPreview()
       navigate('/tasks')
     }
     catch (error) {
@@ -72,9 +88,20 @@ export function DownloadPage() {
     }
   }
 
+  const optionsPanel = (
+    <>
+      <h2 className="section-title mb-5">下载选项</h2>
+      <DownloadOptionsForm value={options} onChange={setOptions} allowCustomArgs={settings.allowCustomArgs} url={urls[0]} />
+      <button className="btn-primary mt-6 w-full" disabled={!urls.length || adding} onClick={add}>
+        {adding ? <Spinner className="size-4 text-white" /> : <Download size={17} />}
+        {adding ? '正在读取链接并添加…' : '加入下载队列'}
+      </button>
+    </>
+  )
+
   return (
     <div className="page-enter">
-      <PageHeader title="新建下载" description="粘贴一个或多个媒体链接，解析后选择格式并加入下载队列。" icon={Download} />
+      <PageHeader title="新建下载" description="粘贴一个或多个媒体链接，选择下载选项后加入下载队列。" icon={Download} />
       <YtdlpRequired className="mb-6" />
       {/* A disabled fieldset disables every control inside it while yt-dlp is missing */}
       <fieldset disabled={!ready} className="m-0 grid min-w-0 gap-6 border-0 p-0 transition-opacity disabled:opacity-60 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -90,7 +117,7 @@ export function DownloadPage() {
                   value={input}
                   onChange={(event) => {
                     setInput(event.target.value)
-                    setInfo(null)
+                    resetPreview()
                   }}
                   className="input-base min-h-28 resize-y pr-12 leading-6"
                   placeholder={'粘贴 YouTube、Bilibili、Twitter / X 等 yt-dlp 支持的链接\n每行一个链接，可批量添加'}
@@ -98,91 +125,21 @@ export function DownloadPage() {
                 <button className="icon-btn absolute top-2 right-2" onClick={paste} title="从剪贴板粘贴"><Clipboard size={17} /></button>
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="text-xs text-slate-400">{urls.length > 1 ? `检测到 ${urls.length} 个链接` : '支持单个视频、播放列表和频道'}</div>
-                <button className="btn-secondary" disabled={!urls.length || analyzing} onClick={analyze}>
-                  {analyzing ? <Spinner className="size-4" /> : <Search size={16} />}
-                  {analyzing ? '正在解析' : '解析链接'}
+                <div className="text-xs text-slate-400">{urls.length > 1 ? `检测到 ${urls.length} 个链接，预览只读取第一个` : '支持单个视频、播放列表和频道'}</div>
+                <button className="btn-secondary" disabled={!urls.length || analyzing} onClick={analyze} title="读取标题、时长、格式等信息，不会下载">
+                  {analyzing ? <Spinner className="size-4" /> : <Eye size={16} />}
+                  {analyzing ? '正在读取' : '预览信息'}
                 </button>
               </div>
             </div>
-            {info
-              ? <MediaPreview info={info} />
-              : (
-                  <div className="flex min-h-52 flex-col items-center justify-center p-8 text-center">
-                    <div className="mb-3 flex size-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 dark:bg-brand-500/10"><Sparkles size={22} /></div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">解析链接以预览媒体信息</p>
-                    <p className="mt-1 text-xs text-slate-400">你也可以直接选择右侧选项并开始下载</p>
-                  </div>
-                )}
+            <PreviewPanel state={preview} onCancel={resetPreview} />
           </section>
 
-          <section className="surface p-5 xl:hidden sm:p-6">
-            <h2 className="section-title mb-5">下载选项</h2>
-            <DownloadOptionsForm value={options} onChange={setOptions} allowCustomArgs={settings.allowCustomArgs} />
-            <button className="btn-primary mt-6 w-full" disabled={!urls.length || adding} onClick={add}>
-              {adding ? <Spinner className="size-4 text-white" /> : <Download size={17} />}
-              {adding ? '正在添加…' : '加入下载队列'}
-            </button>
-          </section>
+          <section className="surface p-5 xl:hidden sm:p-6">{optionsPanel}</section>
         </div>
 
-        <aside className="surface sticky top-22 hidden self-start p-5 xl:block">
-          <h2 className="section-title mb-5">下载选项</h2>
-          <DownloadOptionsForm value={options} onChange={setOptions} allowCustomArgs={settings.allowCustomArgs} />
-          <button className="btn-primary mt-6 w-full" disabled={!urls.length || adding} onClick={add}>
-            {adding ? <Spinner className="size-4 text-white" /> : <Download size={17} />}
-            {adding ? '正在添加…' : '加入下载队列'}
-          </button>
-        </aside>
+        <aside className="surface sticky top-22 hidden self-start p-5 xl:block">{optionsPanel}</aside>
       </fieldset>
-    </div>
-  )
-}
-
-function MediaPreview({ info }: { info: MediaInfo }) {
-  return (
-    <div className="p-5 sm:p-6">
-      <div className="flex flex-col gap-5 sm:flex-row">
-        <div className="relative aspect-video w-full shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-white/5 sm:w-52">
-          {info.thumbnail ? <img className="h-full w-full object-cover" src={info.thumbnail} alt="" referrerPolicy="no-referrer" /> : <div className="flex h-full items-center justify-center text-slate-300"><ListVideo size={32} /></div>}
-          {info.duration && <span className="absolute right-2 bottom-2 rounded-md bg-black/75 px-1.5 py-0.5 text-[11px] font-medium text-white">{formatDuration(info.duration)}</span>}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex items-center gap-2"><span className="rounded-full bg-brand-50 px-2 py-1 text-[10px] font-semibold tracking-wide text-brand-700 uppercase dark:bg-brand-500/10 dark:text-brand-300">{info.type === 'playlist' ? 'Playlist' : info.extractor || 'Media'}</span></div>
-          <h3 className="line-clamp-2 text-lg font-semibold leading-6 text-slate-900 dark:text-white">{info.title}</h3>
-          {info.uploader && <p className="mt-2 text-sm text-slate-500">{info.uploader}</p>}
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-400">
-            {info.type === 'playlist' && (
-              <span>
-                {info.playlistCount ?? info.entries?.length ?? 0}
-                {' '}
-                个条目
-              </span>
-            )}
-            {info.formats.length > 0 && (
-              <span>
-                {info.formats.length}
-                {' '}
-                种格式
-              </span>
-            )}
-            {info.subtitles.length > 0 && (
-              <span>
-                {info.subtitles.length}
-                {' '}
-                种字幕
-              </span>
-            )}
-            {info.chapters > 0 && (
-              <span>
-                {info.chapters}
-                {' '}
-                个章节
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

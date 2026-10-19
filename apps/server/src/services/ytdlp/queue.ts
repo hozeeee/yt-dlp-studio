@@ -19,6 +19,8 @@ import { ytdlpEnv } from './binary'
 
 const logger = createLogger('queue')
 const EMPTY_PROGRESS: TaskProgress = { percent: 0, downloaded: 0, total: null, speed: null, eta: null }
+/** Hidden folder inside the download directory holding unfinished downloads (hidden by the library) */
+const TEMP_FOLDER = '.incomplete'
 
 interface RunningTask {
   child: ChildProcess
@@ -64,6 +66,7 @@ export class DownloadQueue {
     }))
     await this.store.flush()
     this.setupAutoClear()
+    await this.pruneTemp()
     this.schedule()
   }
 
@@ -76,7 +79,7 @@ export class DownloadQueue {
     for (const url of urls) {
       try {
         const merged = mergeDownloadOptions(this.settings.value.defaultOptions, options)
-        const media = await this.info.get(url, true, merged.playlistLimit || undefined)
+        const media = await this.info.get(url, { limit: merged.playlistLimit || undefined, cookies: merged.cookies })
         if (media.type === 'playlist' && !noPlaylist && media.entries?.length) {
           tasks.push(...this.addEntries(media.entries.map((entry, index) => ({
             ...entry,
@@ -149,6 +152,9 @@ export class DownloadQueue {
           active.stopReason = 'cancel'
           killProcessTree(active.child)
         }
+        else {
+          void this.cleanTemp(id)
+        }
         this.patch(id, { status: 'canceled', finishedAt: Date.now(), progress: { ...task.progress, speed: null, eta: null } })
       }
     }
@@ -159,8 +165,12 @@ export class DownloadQueue {
     for (const id of ids) {
       const active = this.running.get(id)
       if (active) {
+        // Temp files are removed once the process has exited, see `finish`
         active.stopReason = 'cancel'
         killProcessTree(active.child)
+      }
+      else {
+        await this.cleanTemp(id)
       }
       const task = this.get(id)
       if (deleteFiles && task) {
@@ -211,19 +221,24 @@ export class DownloadQueue {
     try {
       const command = await this.binaries.requireYtdlp()
       const outputDir = this.outputDir(task.options.folder)
+      // One temp folder per task: resuming finds its `.part` files, canceling can drop them all
+      const tempDir = this.tempDir(task.id)
       await ensureDir(outputDir)
+      await ensureDir(tempDir)
+      await ensureDir(this.info.workDir)
       const ffmpeg = await this.binaries.ffmpeg()
       const settings = this.settings.value
       const child = spawn(command, buildDownloadArgs({
         url: task.url,
         options: task.options,
         outputDir,
+        tempDir,
         playlist: task.playlist,
         settings,
-        cookiesFile: this.cookies.hasEnabled ? this.cookies.mergedFile : undefined,
+        cookies: this.cookies.resolve(task.options.cookies, settings),
         ffmpegPath: ffmpeg?.path,
         archiveFile: settings.useArchive ? path.join(this.dataDir, 'archive.txt') : undefined,
-      }), { stdio: ['ignore', 'pipe', 'pipe'], env: ytdlpEnv, detached: !isWindows, windowsHide: true })
+      }), { cwd: this.info.workDir, stdio: ['ignore', 'pipe', 'pipe'], env: ytdlpEnv, detached: !isWindows, windowsHide: true })
       const state: RunningTask = { child, output: new Set(), errors: [] }
       this.running.set(task.id, state)
       this.patch(task.id, { status: 'downloading', startedAt: task.startedAt ?? Date.now(), finishedAt: undefined, error: undefined })
@@ -293,6 +308,10 @@ export class DownloadQueue {
     if (!state)
       return
     this.flushSoon(id)
+    // Finished or abandoned downloads leave nothing worth keeping; paused / failed ones may resume.
+    // Done before leaving `running` so a quick retry cannot start in a folder being deleted.
+    if (state.stopReason === 'cancel' || (!state.stopReason && code === 0))
+      await this.cleanTemp(id)
     this.running.delete(id)
     const task = this.get(id)
     if (!task)
@@ -350,6 +369,33 @@ export class DownloadQueue {
     if (!dir)
       throw new Error('Download folder must be inside the download directory')
     return dir
+  }
+
+  private get tempRoot() {
+    return path.join(this.settings.value.downloadDir, TEMP_FOLDER)
+  }
+
+  private tempDir(id: string) {
+    return path.join(this.tempRoot, id)
+  }
+
+  /** Delete the unfinished files of a task, and the temp root once it is empty */
+  private async cleanTemp(id: string) {
+    try {
+      await fs.rm(this.tempDir(id), { recursive: true, force: true })
+      await fs.rmdir(this.tempRoot).catch(() => {})
+    }
+    catch (error) {
+      logger.warn(`Could not remove temp files of ${id}`, error)
+    }
+  }
+
+  /** Remove temp folders left by tasks that no longer exist (e.g. after a crash) */
+  private async pruneTemp() {
+    const names = await fs.readdir(this.tempRoot).catch(() => [] as string[])
+    const known = new Set(this.list().map(task => task.id))
+    for (const name of names.filter(name => !known.has(name)))
+      await this.cleanTemp(name)
   }
 
   private num(value?: string) {

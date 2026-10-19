@@ -30,18 +30,24 @@ export interface ExecResult {
 export function execCapture(
   command: string,
   args: string[],
-  options: { timeout?: number, env?: NodeJS.ProcessEnv, maxBuffer?: number } = {},
+  options: { timeout?: number, env?: NodeJS.ProcessEnv, maxBuffer?: number, cwd?: string, signal?: AbortSignal } = {},
 ) {
   return new Promise<ExecResult>((resolve, reject) => {
     execFile(command, args, {
       timeout: options.timeout,
       env: options.env,
+      cwd: options.cwd,
+      signal: options.signal,
       maxBuffer: options.maxBuffer ?? 64 * 1024 * 1024,
       windowsHide: true,
       encoding: 'utf8',
     }, (error, stdout, stderr) => {
       if (error && (error as NodeJS.ErrnoException).code === 'ENOENT')
         return reject(error)
+      if (options.signal?.aborted)
+        return reject(new Error('Canceled'))
+      if (error && 'killed' in error && error.killed && options.timeout)
+        stderr = `${stderr}\nTimed out after ${Math.round(options.timeout / 1000)}s`
       resolve({
         code: error ? (typeof error.code === 'number' ? error.code : 1) : 0,
         stdout,

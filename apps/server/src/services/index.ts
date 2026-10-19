@@ -28,7 +28,7 @@ export class AppServices {
     this.settings = new SettingsService(config, this.events, () => this.auth.enabled)
     this.binaries = new BinaryManager(config.dataDir, this.settings, this.events)
     this.cookies = new CookieService(config.dataDir, this.events)
-    this.info = new InfoService(this.settings, this.binaries, this.cookies)
+    this.info = new InfoService(config.dataDir, this.settings, this.binaries, this.cookies)
     this.queue = new DownloadQueue(config.dataDir, this.settings, this.events, this.binaries, this.info, this.cookies)
     this.subscriptions = new SubscriptionService(config.dataDir, this.settings, this.events, this.info, this.queue)
     this.library = new LibraryService(this.settings)
