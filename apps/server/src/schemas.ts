@@ -1,4 +1,5 @@
-import { DEFAULT_DOWNLOAD_OPTIONS } from '@yt-dlp-studio/shared'
+import type { LogCategory, LogLevel } from '@yt-dlp-studio/shared'
+import { DEFAULT_DOWNLOAD_OPTIONS, LOG_CATEGORIES, LOG_LEVELS } from '@yt-dlp-studio/shared'
 import { z } from 'zod'
 
 const optionalText = (max = 2000) => z.string().trim().max(max).optional()
@@ -130,6 +131,15 @@ export const uploadCookieSchema = z.object({
 
 export const updateCookieSchema = z.object({
   enabled: z.boolean(),
+})
+
+/** Query string of the logs endpoints, empty values mean "any" */
+export const logQuerySchema = z.object({
+  level: z.enum(LOG_LEVELS as [LogLevel, ...LogLevel[]]).optional().catch(undefined),
+  category: z.enum(LOG_CATEGORIES as [LogCategory, ...LogCategory[]]).optional().catch(undefined),
+  search: z.string().max(200).optional(),
+  before: z.coerce.number().int().positive().optional().catch(undefined),
+  limit: z.coerce.number().int().min(1).max(500).optional().catch(undefined),
 })
 
 export function mergeDownloadOptions(...parts: (Partial<typeof DEFAULT_DOWNLOAD_OPTIONS> | undefined)[]) {

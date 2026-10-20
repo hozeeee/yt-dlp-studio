@@ -3,6 +3,9 @@ import type { SettingsService } from './settings'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { resolveInside, toPosix } from '../utils/fs'
+import { createLogger } from '../utils/logger'
+
+const logger = createLogger('library')
 
 const TYPES: Record<string, LibraryEntryType> = {
   '.mp4': 'video',
@@ -123,6 +126,7 @@ export class LibraryService {
     if (!target || target === this.settings.value.downloadDir)
       throw new Error('Invalid library path')
     await fs.rm(target, { recursive: true, force: true })
+    logger.info(`Deleted ${relative}`)
   }
 
   async rename(relative: string, name: string) {
@@ -135,7 +139,9 @@ export class LibraryService {
     if (!this.resolve(toPosix(path.relative(this.settings.value.downloadDir, target))))
       throw new Error('Invalid destination')
     await fs.rename(source, target)
-    return toPosix(path.relative(this.settings.value.downloadDir, target))
+    const renamed = toPosix(path.relative(this.settings.value.downloadDir, target))
+    logger.info(`Renamed ${relative} → ${renamed}`)
+    return renamed
   }
 
   async mkdir(relative: string) {
@@ -143,5 +149,6 @@ export class LibraryService {
     if (!dir)
       throw new Error('Invalid library path')
     await fs.mkdir(dir, { recursive: true })
+    logger.info(`Created folder ${relative}`)
   }
 }

@@ -4,10 +4,13 @@ import type { SettingsService } from '../settings'
 import type { BinaryManager } from './binary'
 import path from 'node:path'
 import { ensureDir } from '../../utils/fs'
+import { createLogger, describeCommand, elapsed } from '../../utils/logger'
 import { execCapture } from '../../utils/process'
 import { buildCommonArgs } from './args'
 import { ytdlpEnv } from './binary'
 import { normalizeInfo, parseJsonOutput } from './parser'
+
+const logger = createLogger('preview')
 
 export interface InfoRequest {
   /** Fetch playlist entries flat (fast) */
@@ -17,6 +20,8 @@ export interface InfoRequest {
   cookies?: string
   /** Stop waiting, e.g. when the HTTP client disconnected */
   signal?: AbortSignal
+  /** Who asked, only used by the logs */
+  origin?: 'preview' | 'download' | 'subscription'
 }
 
 /** One yt-dlp run shared by every caller asking for the same info at the same time */
@@ -42,7 +47,7 @@ export class InfoService {
     return path.join(this.dataDir, 'tmp')
   }
 
-  async get(url: string, { flat = true, limit, cookies, signal }: InfoRequest = {}): Promise<MediaInfo> {
+  async get(url: string, { flat = true, limit, cookies, signal, origin = 'preview' }: InfoRequest = {}): Promise<MediaInfo> {
     if (signal?.aborted)
       throw new Error('Canceled')
     const key = `${url}\n${flat}\n${limit ?? ''}\n${cookies ?? ''}`
@@ -52,13 +57,16 @@ export class InfoService {
       const created: RunningInfo = {
         controller,
         waiters: 0,
-        promise: this.fetch(url, flat, limit, cookies, controller.signal).finally(() => {
+        promise: this.fetch(url, { flat, limit, cookies, origin }, controller.signal).finally(() => {
           if (this.running.get(key) === created)
             this.running.delete(key)
         }),
       }
       this.running.set(key, created)
       entry = created
+    }
+    else {
+      logger.debug(`Joined the running analysis of ${url}`, { data: { origin } })
     }
     entry.waiters++
     // Callers without a signal (queue, subscriptions) keep the run alive until it ends
@@ -83,7 +91,38 @@ export class InfoService {
     })
   }
 
-  private async fetch(url: string, flat: boolean, limit: number | undefined, cookies: string | undefined, signal: AbortSignal) {
+  private async fetch(url: string, request: Required<Pick<InfoRequest, 'flat' | 'origin'>> & Pick<InfoRequest, 'limit' | 'cookies'>, signal: AbortSignal) {
+    const { flat, limit, cookies, origin } = request
+    const started = Date.now()
+    const settings = this.settings.value
+    logger.info(`Analyzing ${url}`, {
+      data: { origin, flat, limit, cookies: this.cookies.describe(cookies, settings), proxy: settings.proxy ? 'on' : undefined },
+    })
+    try {
+      const media = await this.extract(url, request, signal)
+      logger.info(`Analyzed "${media.title}" in ${elapsed(started)}`, {
+        data: {
+          origin,
+          type: media.type,
+          extractor: media.extractor,
+          entries: media.entries?.length,
+          formats: media.type === 'video' ? media.formats.length : undefined,
+          ms: Date.now() - started,
+        },
+      })
+      return media
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (signal.aborted)
+        logger.info(`Analysis of ${url} canceled after ${elapsed(started)}`, { data: { origin } })
+      else
+        logger.error(`Analysis of ${url} failed after ${elapsed(started)}`, { detail: message, data: { origin, ms: Date.now() - started } })
+      throw error
+    }
+  }
+
+  private async extract(url: string, { flat, limit, cookies }: Pick<InfoRequest, 'flat' | 'limit' | 'cookies'>, signal: AbortSignal) {
     const command = await this.binaries.requireYtdlp()
     const ffmpeg = await this.binaries.ffmpeg()
     const settings = this.settings.value
@@ -107,6 +146,7 @@ export class InfoService {
     args.push('--', url)
 
     await ensureDir(this.workDir)
+    logger.debug('Running yt-dlp', { detail: describeCommand(command, args) })
     const result = await execCapture(command, args, {
       timeout: flat ? 2 * 60_000 : 5 * 60_000,
       env: ytdlpEnv,

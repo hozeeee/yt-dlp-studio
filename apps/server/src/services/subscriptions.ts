@@ -9,7 +9,7 @@ import { createId } from '../utils/id'
 import { createLogger } from '../utils/logger'
 import { JsonStore } from './store'
 
-const logger = createLogger('subscriptions')
+const logger = createLogger('subscription')
 
 interface StoredSubscription extends Subscription {
   seenIds: string[]
@@ -47,7 +47,7 @@ export class SubscriptionService {
 
   async create(request: CreateSubscriptionRequest) {
     const options = mergeDownloadOptions(this.settings.value.defaultOptions, request.options)
-    const media = await this.info.get(request.url, { limit: this.settings.value.subscriptionScanLimit, cookies: options.cookies })
+    const media = await this.info.get(request.url, { limit: this.settings.value.subscriptionScanLimit, cookies: options.cookies, origin: 'subscription' })
     const now = Date.now()
     const existing = this.store.data.subscriptions.find(item => item.url === request.url)
     if (existing)
@@ -71,6 +71,10 @@ export class SubscriptionService {
     this.store.data.subscriptions.unshift(item)
     await this.store.flush()
     this.emit(item)
+    logger.info(`Subscribed to "${item.title}"`, {
+      ref: item.id,
+      data: { url: item.url, interval: item.interval, known: seenIds.length, downloadExisting: request.downloadExisting ?? false },
+    })
     if (request.downloadExisting)
       await this.check(item.id)
     return this.public(item)
@@ -90,20 +94,25 @@ export class SubscriptionService {
       item.options = mergeDownloadOptions(item.options, request.options)
     await this.store.flush()
     this.emit(item)
+    logger.info(`Updated subscription "${item.title}"`, {
+      ref: id,
+      data: { enabled: request.enabled, interval: request.interval, options: request.options ? 'changed' : undefined },
+    })
     return this.public(item)
   }
 
   async remove(id: string) {
-    const before = this.store.data.subscriptions.length
-    this.store.data.subscriptions = this.store.data.subscriptions.filter(item => item.id !== id)
-    if (this.store.data.subscriptions.length === before)
+    const removed = this.find(id)
+    if (!removed)
       return false
+    this.store.data.subscriptions = this.store.data.subscriptions.filter(item => item.id !== id)
     await this.store.flush()
     this.bus.emit({ type: 'subscription:removed', id })
+    logger.info(`Unsubscribed from "${removed.title}"`, { ref: id })
     return true
   }
 
-  async check(id: string) {
+  async check(id: string, trigger: 'manual' | 'schedule' = 'manual') {
     const item = this.find(id)
     if (!item)
       throw new Error('Subscription not found')
@@ -113,8 +122,10 @@ export class SubscriptionService {
     this.checking.add(id)
     item.checking = true
     this.emit(item)
+    const started = Date.now()
+    logger.debug(`Checking "${item.title}"`, { ref: id, data: { trigger } })
     try {
-      const media = await this.info.get(item.url, { limit: this.settings.value.subscriptionScanLimit, cookies: item.options.cookies })
+      const media = await this.info.get(item.url, { limit: this.settings.value.subscriptionScanLimit, cookies: item.options.cookies, origin: 'subscription' })
       const entries = media.entries ?? [{
         id: media.id,
         url: media.url,
@@ -146,12 +157,15 @@ export class SubscriptionService {
       item.seenCount = item.seenIds.length
       item.lastCheckedAt = Date.now()
       item.lastError = undefined
-      logger.info(`Checked ${item.title}: ${fresh.length} new item(s)`)
+      logger.info(`Checked "${item.title}": ${fresh.length} new item(s)`, {
+        ref: id,
+        data: { trigger, scanned: entries.length, ms: Date.now() - started },
+      })
     }
     catch (error) {
       item.lastCheckedAt = Date.now()
       item.lastError = error instanceof Error ? error.message : String(error)
-      logger.warn(`Failed to check ${item.title}: ${item.lastError}`)
+      logger.warn(`Failed to check "${item.title}"`, { ref: id, detail: item.lastError, data: { trigger } })
     }
     finally {
       this.checking.delete(id)
@@ -173,7 +187,7 @@ export class SubscriptionService {
     for (const item of this.store.data.subscriptions) {
       const due = !item.lastCheckedAt || now - item.lastCheckedAt >= item.interval * 60_000
       if (item.enabled && due && !this.checking.has(item.id))
-        void this.check(item.id)
+        void this.check(item.id, 'schedule')
     }
   }
 

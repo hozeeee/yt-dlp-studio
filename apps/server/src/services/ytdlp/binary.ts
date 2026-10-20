@@ -58,6 +58,8 @@ export class BinaryManager {
   private jobs: Record<BinaryName, BinaryJob | null> = { ytdlp: null, ffmpeg: null }
   private controllers = new Map<BinaryName, AbortController>()
   private emittedAt = new Map<BinaryName, number>()
+  /** Last detection result, so only changes are logged */
+  private detected = new Map<BinaryName, string>()
 
   constructor(
     private readonly dataDir: string,
@@ -89,6 +91,7 @@ export class BinaryManager {
     this.ytdlpCache ??= this.find(this.settings.value.ytdlpPath, this.managed('yt-dlp'), 'yt-dlp', probeYtdlp).then((info) => {
       if (!info)
         this.ytdlpCache = null
+      this.logDetection('ytdlp', info)
       return info
     })
     return this.ytdlpCache
@@ -98,9 +101,22 @@ export class BinaryManager {
     this.ffmpegCache ??= this.find(this.settings.value.ffmpegPath, this.managed('ffmpeg'), 'ffmpeg', probeFfmpeg).then((info) => {
       if (!info)
         this.ffmpegCache = null
+      this.logDetection('ffmpeg', info)
       return info
     })
     return this.ffmpegCache
+  }
+
+  private logDetection(binary: BinaryName, info: BinaryInfo | null) {
+    const key = info ? `${info.path}@${info.version}` : ''
+    if (this.detected.get(binary) === key)
+      return
+    this.detected.set(binary, key)
+    const name = binary === 'ytdlp' ? 'yt-dlp' : 'ffmpeg'
+    if (info)
+      logger.info(`Using ${name} ${info.version}`, { data: { path: info.path, managed: info.managed ?? false } })
+    else
+      logger.warn(`${name} not found`, { detail: binary === 'ytdlp' ? 'Install it from Settings → System, or set its path' : 'Merging formats and post-processing are unavailable' })
   }
 
   /** Resolve the yt-dlp command or throw a friendly error */
@@ -156,17 +172,22 @@ export class BinaryManager {
     this.jobs[binary] = job
     this.controllers.set(binary, controller)
     this.emit(job, true)
+    const name = binary === 'ytdlp' ? 'yt-dlp' : 'ffmpeg'
+    logger.info(`${action === 'install' ? 'Installing' : 'Updating'} ${name}`, { ref: job.id, data: { mirror: this.settings.value.githubMirror.trim() || undefined } })
 
     void this.execute(job, controller.signal)
       .then((version) => {
         this.patch(job, { status: 'success', phase: 'done', version, speed: undefined })
-        this.log(job, `${binary === 'ytdlp' ? 'yt-dlp' : 'ffmpeg'} ${version} is ready`)
+        this.log(job, `${name} ${version} is ready`)
       })
       .catch((error) => {
         const cancelled = controller.signal.aborted && controller.signal.reason instanceof JobCancelled
         const message = error instanceof Error ? error.message : String(error)
-        logger.error(`${binary} ${action} failed:`, message)
-        this.log(job, cancelled ? 'Cancelled' : `Error: ${message}`)
+        if (cancelled)
+          logger.info(`${name} ${action} cancelled`, { ref: job.id })
+        else
+          logger.error(`${name} ${action} failed`, { ref: job.id, detail: message })
+        this.log(job, cancelled ? 'Cancelled' : `Error: ${message}`, false)
         this.patch(job, { status: cancelled ? 'cancelled' : 'error', error: cancelled ? undefined : message, speed: undefined })
       })
       .finally(() => {
@@ -331,10 +352,13 @@ export class BinaryManager {
       throw signal.reason
   }
 
-  private log(job: BinaryJob, line: string) {
+  /** Append to the job log shown in the UI, mirrored to the app log unless already logged */
+  private log(job: BinaryJob, line: string, mirror = true) {
     job.log.push(line)
     if (job.log.length > LOG_LIMIT)
       job.log.splice(0, job.log.length - LOG_LIMIT)
+    if (mirror)
+      logger.info(line, { ref: job.id })
     this.emit(job)
   }
 

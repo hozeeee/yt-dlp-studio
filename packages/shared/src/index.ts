@@ -1,5 +1,6 @@
 export * from './defaults'
 export * from './events'
+export * from './log'
 export * from './media'
 export * from './settings'
 export * from './subscription'

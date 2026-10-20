@@ -11,22 +11,27 @@ import path from 'node:path'
 import { mergeDownloadOptions } from '../../schemas'
 import { ensureDir, getFileSize, resolveInside, toPosix } from '../../utils/fs'
 import { createId } from '../../utils/id'
-import { createLogger } from '../../utils/logger'
+import { createLogger, describeCommand, elapsed } from '../../utils/logger'
 import { isWindows, killProcessTree } from '../../utils/process'
 import { JsonStore } from '../store'
 import { buildDownloadArgs, MARK_FILE, MARK_INFO, MARK_POSTPROCESS, MARK_PROGRESS } from './args'
 import { ytdlpEnv } from './binary'
 
-const logger = createLogger('queue')
+const logger = createLogger('download')
 const EMPTY_PROGRESS: TaskProgress = { percent: 0, downloaded: 0, total: null, speed: null, eta: null }
 /** Hidden folder inside the download directory holding unfinished downloads (hidden by the library) */
 const TEMP_FOLDER = '.incomplete'
+/** yt-dlp warnings copied to the logs per run, the rest is only counted */
+const MAX_LOGGED_WARNINGS = 20
 
 interface RunningTask {
   child: ChildProcess
   stopReason?: 'pause' | 'cancel' | 'shutdown'
   output: Set<string>
   errors: string[]
+  warnings: number
+  stage?: string
+  startedAt: number
   updateTimer?: NodeJS.Timeout
   pendingPatch?: TaskPatch
 }
@@ -55,16 +60,24 @@ export class DownloadQueue {
   }
 
   async init() {
+    let interrupted = 0
     await this.store.load(raw => ({
       tasks: Array.isArray(raw.tasks)
-        ? raw.tasks.map(task => ({
-            ...task,
-            status: ['downloading', 'processing'].includes(task.status) ? 'queued' as const : task.status,
-            progress: task.status === 'completed' ? task.progress : { ...EMPTY_PROGRESS },
-          }))
+        ? raw.tasks.map((task) => {
+            const active = ['downloading', 'processing'].includes(task.status)
+            if (active)
+              interrupted++
+            return {
+              ...task,
+              status: active ? 'queued' as const : task.status,
+              progress: task.status === 'completed' ? task.progress : { ...EMPTY_PROGRESS },
+            }
+          })
         : [],
     }))
     await this.store.flush()
+    if (interrupted)
+      logger.info(`Requeued ${interrupted} download(s) interrupted by the last shutdown`)
     this.setupAutoClear()
     await this.pruneTemp()
     this.schedule()
@@ -79,7 +92,7 @@ export class DownloadQueue {
     for (const url of urls) {
       try {
         const merged = mergeDownloadOptions(this.settings.value.defaultOptions, options)
-        const media = await this.info.get(url, { limit: merged.playlistLimit || undefined, cookies: merged.cookies })
+        const media = await this.info.get(url, { limit: merged.playlistLimit || undefined, cookies: merged.cookies, origin: 'download' })
         if (media.type === 'playlist' && !noPlaylist && media.entries?.length) {
           tasks.push(...this.addEntries(media.entries.map((entry, index) => ({
             ...entry,
@@ -98,6 +111,7 @@ export class DownloadQueue {
       }
       catch (error) {
         errors.push({ url, error: error instanceof Error ? error.message : String(error) })
+        logger.warn(`Could not add ${url}`, { error: error instanceof Error ? error.message : error })
       }
     }
     return { tasks, errors }
@@ -122,8 +136,14 @@ export class DownloadQueue {
     }))
     this.list().unshift(...tasks)
     this.store.save()
-    if (tasks.length)
+    if (tasks.length) {
       this.bus.emit({ type: 'task:added', tasks })
+      const titles = tasks.slice(0, 3).map(task => `"${task.title}"`).join(', ')
+      logger.info(`Queued ${tasks.length} download(s): ${titles}${tasks.length > 3 ? ` and ${tasks.length - 3} more` : ''}`, {
+        ref: tasks.length === 1 ? tasks[0].id : undefined,
+        data: { kind: resolved.kind, playlist: tasks[0].playlist?.title, subscription: subscriptionId, folder: resolved.folder || undefined },
+      })
+    }
     this.schedule()
     return tasks
   }
@@ -140,11 +160,14 @@ export class DownloadQueue {
           killProcessTree(active.child)
         }
         this.patch(id, { status: 'paused', progress: { ...task.progress, speed: null, eta: null } })
+        logger.info(`Paused "${task.title}"`, { ref: id })
       }
       else if (action === 'resume' && task.status === 'paused') {
         this.patch(id, { status: 'queued', error: undefined })
+        logger.info(`Resumed "${task.title}"`, { ref: id })
       }
       else if (action === 'retry' && ['failed', 'canceled', 'completed'].includes(task.status)) {
+        logger.info(`Retrying "${task.title}"`, { ref: id, data: { previous: task.status } })
         this.patch(id, { status: 'queued', error: undefined, progress: { ...EMPTY_PROGRESS }, startedAt: undefined, finishedAt: undefined, files: [], size: undefined })
       }
       else if (action === 'cancel' && !['completed', 'failed', 'canceled'].includes(task.status)) {
@@ -156,12 +179,14 @@ export class DownloadQueue {
           void this.cleanTemp(id)
         }
         this.patch(id, { status: 'canceled', finishedAt: Date.now(), progress: { ...task.progress, speed: null, eta: null } })
+        logger.info(`Canceled "${task.title}"`, { ref: id })
       }
     }
     this.schedule()
   }
 
-  async remove(ids: string[], deleteFiles: boolean) {
+  async remove(ids: string[], deleteFiles: boolean, reason?: string) {
+    let removedFiles = 0
     for (const id of ids) {
       const active = this.running.get(id)
       if (active) {
@@ -176,19 +201,29 @@ export class DownloadQueue {
       if (deleteFiles && task) {
         for (const relative of task.files) {
           const file = resolveInside(this.settings.value.downloadDir, relative)
-          if (file)
+          if (file) {
             await fs.rm(file, { force: true }).catch(() => {})
+            removedFiles++
+          }
         }
       }
     }
+    const before = this.list().length
     this.store.data.tasks = this.list().filter(task => !ids.includes(task.id))
     await this.store.flush()
     this.bus.emit({ type: 'task:removed', ids })
+    const removed = before - this.list().length
+    if (removed) {
+      logger.info(`${reason ?? 'Removed'} ${removed} task(s)`, {
+        ref: ids.length === 1 ? ids[0] : undefined,
+        data: { deleteFiles, files: deleteFiles ? removedFiles : undefined },
+      })
+    }
   }
 
   async clearFinished(deleteFiles: boolean) {
     const ids = this.list().filter(task => ['completed', 'failed', 'canceled'].includes(task.status)).map(task => task.id)
-    await this.remove(ids, deleteFiles)
+    await this.remove(ids, deleteFiles, 'Cleared')
     return ids.length
   }
 
@@ -228,7 +263,7 @@ export class DownloadQueue {
       await ensureDir(this.info.workDir)
       const ffmpeg = await this.binaries.ffmpeg()
       const settings = this.settings.value
-      const child = spawn(command, buildDownloadArgs({
+      const args = buildDownloadArgs({
         url: task.url,
         options: task.options,
         outputDir,
@@ -238,24 +273,41 @@ export class DownloadQueue {
         cookies: this.cookies.resolve(task.options.cookies, settings),
         ffmpegPath: ffmpeg?.path,
         archiveFile: settings.useArchive ? path.join(this.dataDir, 'archive.txt') : undefined,
-      }), { cwd: this.info.workDir, stdio: ['ignore', 'pipe', 'pipe'], env: ytdlpEnv, detached: !isWindows, windowsHide: true })
-      const state: RunningTask = { child, output: new Set(), errors: [] }
+      })
+      const child = spawn(command, args, { cwd: this.info.workDir, stdio: ['ignore', 'pipe', 'pipe'], env: ytdlpEnv, detached: !isWindows, windowsHide: true })
+      const state: RunningTask = { child, output: new Set(), errors: [], warnings: 0, startedAt: Date.now() }
       this.running.set(task.id, state)
+      const resumed = Boolean(task.startedAt)
       this.patch(task.id, { status: 'downloading', startedAt: task.startedAt ?? Date.now(), finishedAt: undefined, error: undefined })
-      logger.info(`Started ${task.id}: ${task.title}`)
+      logger.info(`Started "${task.title}"`, {
+        ref: task.id,
+        data: {
+          url: task.url,
+          kind: task.options.kind,
+          quality: task.options.kind === 'video' ? task.options.quality : undefined,
+          format: task.options.format || undefined,
+          cookies: this.cookies.describe(task.options.cookies, settings),
+          folder: task.options.folder || undefined,
+          resumed: resumed || undefined,
+        },
+      })
+      logger.debug('Running yt-dlp', { ref: task.id, detail: describeCommand(command, args) })
       this.lines(child.stdout!, line => this.stdout(task.id, line))
       this.lines(child.stderr!, (line) => {
-        if (line.trim()) {
-          state.errors.push(line)
-          if (state.errors.length > 80)
-            state.errors.shift()
-        }
+        if (!line.trim())
+          return
+        state.errors.push(line)
+        if (state.errors.length > 80)
+          state.errors.shift()
+        if (line.startsWith('WARNING:') && ++state.warnings <= MAX_LOGGED_WARNINGS)
+          logger.warn(line.slice(8).trim(), { ref: task.id })
       })
       child.on('error', error => state.errors.push(error.message))
       child.on('close', code => void this.finish(task.id, code ?? 1))
     }
     catch (error) {
       this.patch(task.id, { status: 'failed', error: error instanceof Error ? error.message : String(error), finishedAt: Date.now() })
+      logger.error(`Could not start "${task.title}"`, { ref: task.id, detail: error instanceof Error ? error.message : String(error) })
       this.schedule()
     }
   }
@@ -288,11 +340,17 @@ export class DownloadQueue {
     else if (line.startsWith(MARK_POSTPROCESS)) {
       const task = this.get(id)
       const stage = line.slice(MARK_POSTPROCESS.length).split('|')[1]
+      if (stage && stage !== state.stage) {
+        state.stage = stage
+        logger.debug(`Post-processing: ${stage}`, { ref: id })
+      }
       if (task)
         this.patchSoon(id, { status: 'processing', progress: { ...task.progress, speed: null, eta: null, stage } })
     }
     else if (line.startsWith(MARK_FILE)) {
-      state.output.add(line.slice(MARK_FILE.length))
+      const file = line.slice(MARK_FILE.length)
+      state.output.add(file)
+      logger.debug(`Saved ${path.basename(file)}`, { ref: id })
     }
     else if (line.startsWith(MARK_INFO)) {
       try {
@@ -318,19 +376,32 @@ export class DownloadQueue {
       return this.schedule()
     if (state.stopReason === 'shutdown') {
       this.patch(id, { status: 'queued', progress: { ...EMPTY_PROGRESS } })
+      logger.debug(`Stopped "${task.title}" for shutdown, it will resume on next start`, { ref: id })
     }
-    else if (!state.stopReason && code === 0) {
+    else if (state.stopReason) {
+      logger.debug(`yt-dlp exited after ${state.stopReason} of "${task.title}"`, { ref: id, data: { code } })
+    }
+    else if (code === 0) {
       const root = this.settings.value.downloadDir
       const files = [...state.output].map(file => path.relative(root, file)).filter(file => !file.startsWith('..') && !path.isAbsolute(file)).map(toPosix)
       let size = 0
       for (const file of files)
         size += await getFileSize(path.join(root, file))
       this.patch(id, { status: 'completed', progress: { percent: 100, downloaded: size, total: size, speed: null, eta: null }, files: [...new Set(files)], size, finishedAt: Date.now(), error: undefined })
-      logger.info(`Completed ${id}: ${task.title}`)
+      logger.info(`Completed "${task.title}" in ${elapsed(state.startedAt)}`, {
+        ref: id,
+        detail: files.length ? files.join('\n') : 'No new file, it may already be in the download archive',
+        data: { files: files.length, bytes: size, warnings: state.warnings || undefined },
+      })
     }
-    else if (!state.stopReason) {
-      this.patch(id, { status: 'failed', error: state.errors.slice(-8).join('\n') || `yt-dlp exited with code ${code}`, finishedAt: Date.now(), progress: { ...task.progress, speed: null, eta: null } })
-      logger.warn(`Failed ${id}: ${task.title}`)
+    else {
+      const error = state.errors.slice(-8).join('\n') || `yt-dlp exited with code ${code}`
+      this.patch(id, { status: 'failed', error, finishedAt: Date.now(), progress: { ...task.progress, speed: null, eta: null } })
+      logger.error(`Failed "${task.title}" after ${elapsed(state.startedAt)}`, {
+        ref: id,
+        detail: state.errors.slice(-30).join('\n') || error,
+        data: { code, url: task.url, warnings: state.warnings || undefined },
+      })
     }
     this.schedule()
   }
@@ -386,7 +457,7 @@ export class DownloadQueue {
       await fs.rmdir(this.tempRoot).catch(() => {})
     }
     catch (error) {
-      logger.warn(`Could not remove temp files of ${id}`, error)
+      logger.warn(`Could not remove temp files of ${id}`, { ref: id, error })
     }
   }
 
@@ -394,8 +465,11 @@ export class DownloadQueue {
   private async pruneTemp() {
     const names = await fs.readdir(this.tempRoot).catch(() => [] as string[])
     const known = new Set(this.list().map(task => task.id))
-    for (const name of names.filter(name => !known.has(name)))
+    const orphans = names.filter(name => !known.has(name))
+    for (const name of orphans)
       await this.cleanTemp(name)
+    if (orphans.length)
+      logger.info(`Removed ${orphans.length} leftover temp folder(s) of deleted tasks`)
   }
 
   private num(value?: string) {
@@ -413,7 +487,7 @@ export class DownloadQueue {
       const before = Date.now() - hours * 3_600_000
       const ids = this.list().filter(task => task.finishedAt && task.finishedAt < before && ['completed', 'failed', 'canceled'].includes(task.status)).map(task => task.id)
       if (ids.length)
-        void this.remove(ids, false)
+        void this.remove(ids, false, 'Auto-cleared')
     }, 60_000)
     this.clearTimer.unref()
   }

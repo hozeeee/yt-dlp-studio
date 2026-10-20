@@ -34,6 +34,15 @@ interface AppState {
 let events: EventSource | null = null
 let initializing: Promise<void> | null = null
 
+type ServerEventListener = (event: ServerEvent) => void
+const listeners = new Set<ServerEventListener>()
+
+/** Raw realtime events for pages keeping their own state (e.g. the logs page), returns the unsubscribe function */
+export function onServerEvent(listener: ServerEventListener) {
+  listeners.add(listener)
+  return () => void listeners.delete(listener)
+}
+
 function patchTask(tasks: DownloadTask[], patch: TaskPatch) {
   return tasks.map(task => task.id === patch.id ? { ...task, ...patch } : task)
 }
@@ -161,9 +170,14 @@ async function loadProtected(set: StoreSet, get: StoreGet) {
     set({ connected: false })
   }
   events.onmessage = (message) => {
+    let event: ServerEvent
     try {
-      get().applyEvent(JSON.parse(message.data) as ServerEvent)
+      event = JSON.parse(message.data) as ServerEvent
     }
-    catch {}
+    catch {
+      return
+    }
+    get().applyEvent(event)
+    listeners.forEach(listener => listener(event))
   }
 }

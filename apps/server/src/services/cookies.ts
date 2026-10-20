@@ -93,7 +93,7 @@ export class CookieService {
       logger.info('Imported existing cookies.txt')
     }
     catch (error) {
-      logger.warn('Could not import existing cookies.txt', error)
+      logger.warn('Could not import existing cookies.txt', { error })
     }
   }
 
@@ -125,6 +125,19 @@ export class CookieService {
     return undefined
   }
 
+  /** Human readable cookies source of a download for the logs (never the cookie values) */
+  describe(selection: string | undefined, settings: AppSettings) {
+    if (selection === COOKIES_NONE)
+      return 'none'
+    if (selection)
+      return `file: ${this.store.data.files.find(item => item.id === selection)?.name ?? selection}`
+    if (settings.cookiesMode === 'file' && this.hasEnabled)
+      return 'global: merged files'
+    if (settings.cookiesMode === 'browser' && settings.cookiesBrowser)
+      return `global: browser ${settings.cookiesBrowser}`
+    return 'none'
+  }
+
   /** Add a file. A file with the same name is replaced, so re-exporting a site is easy. */
   add(name: string, content: string) {
     return this.serial(async () => {
@@ -153,6 +166,10 @@ export class CookieService {
       await writeFileAtomic(this.fileOf(file.id), content)
       this.store.data.files = [...this.store.data.files.filter(item => item.id !== file.id), file]
       await this.commit()
+      logger.info(`${existing ? 'Replaced' : 'Added'} cookies file "${file.name}"`, {
+        ref: file.id,
+        data: { cookies: file.count, expired: file.expired || undefined, domains: file.domains.slice(0, 8).join(', ') },
+      })
       return file
     })
   }
@@ -164,18 +181,20 @@ export class CookieService {
         return null
       file.enabled = enabled
       await this.commit()
+      logger.info(`${enabled ? 'Enabled' : 'Disabled'} cookies file "${file.name}"`, { ref: file.id })
       return file
     })
   }
 
   remove(id: string) {
     return this.serial(async () => {
-      const before = this.store.data.files.length
-      this.store.data.files = this.store.data.files.filter(item => item.id !== id)
-      if (before === this.store.data.files.length)
+      const removed = this.store.data.files.find(item => item.id === id)
+      if (!removed)
         return false
+      this.store.data.files = this.store.data.files.filter(item => item.id !== id)
       await fs.rm(this.fileOf(id), { force: true })
       await this.commit()
+      logger.info(`Removed cookies file "${removed.name}"`, { ref: id })
       return true
     })
   }
@@ -208,7 +227,7 @@ export class CookieService {
         }
       }
       catch (error) {
-        logger.warn(`Could not read cookies file ${file.name}`, error)
+        logger.warn(`Could not read cookies file ${file.name}`, { ref: file.id, error })
       }
     }
     const header = [

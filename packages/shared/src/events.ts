@@ -1,3 +1,4 @@
+import type { LogEntry } from './log'
 import type { PublicSettings } from './settings'
 import type { Subscription } from './subscription'
 import type { BinaryJob, CookieFile } from './system'
@@ -15,3 +16,5 @@ export type ServerEvent
     | { type: 'settings:updated', settings: PublicSettings }
     | { type: 'binary:job', job: BinaryJob }
     | { type: 'cookies:updated', files: CookieFile[] }
+    | { type: 'log:added', entries: LogEntry[] }
+    | { type: 'log:cleared' }

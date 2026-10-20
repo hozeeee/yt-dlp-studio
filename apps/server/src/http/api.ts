@@ -15,6 +15,7 @@ import {
   idsSchema,
   infoRequestSchema,
   loginSchema,
+  logQuerySchema,
   passwordSchema,
   taskActionSchema,
   updateCookieSchema,
@@ -23,7 +24,11 @@ import {
 } from '../schemas'
 import { AUTH_COOKIE } from '../services/auth'
 import { mimeType } from '../services/library'
+import { createLogger } from '../utils/logger'
 import { validateExternalUrl } from '../utils/url'
+
+const authLogger = createLogger('auth')
+const logger = createLogger('system')
 
 function jsonError(c: Context, message: string, status = 400, details?: unknown) {
   return c.json({ error: message, details }, status as 400)
@@ -40,6 +45,10 @@ async function bodyJson(c: Context) {
 
 const loginAttempts = new Map<string, { count: number, reset: number }>()
 
+function clientIp(c: Context) {
+  return c.req.header('x-forwarded-for')?.split(',')[0].trim() || c.req.header('x-real-ip') || 'local'
+}
+
 export function createApi(services: AppServices) {
   const api = new Hono()
 
@@ -47,22 +56,28 @@ export function createApi(services: AppServices) {
     if (error instanceof ZodError)
       return jsonError(c, 'Invalid request', 400, error.issues)
     const message = error instanceof Error ? error.message : 'Internal server error'
+    logger.debug(`${c.req.method} ${c.req.path} failed: ${message}`)
     return jsonError(c, message, message.includes('not found') ? 404 : 400)
   })
 
   api.get('/auth/status', c => c.json({ enabled: services.auth.enabled, authenticated: services.auth.verifyToken(getCookie(c, AUTH_COOKIE)) }))
   api.post('/auth/login', async (c) => {
-    const ip = c.req.header('x-forwarded-for')?.split(',')[0].trim() || c.req.header('x-real-ip') || 'local'
+    const ip = clientIp(c)
     const now = Date.now()
     const attempt = loginAttempts.get(ip)
-    if (attempt && attempt.reset > now && attempt.count >= 10)
+    if (attempt && attempt.reset > now && attempt.count >= 10) {
+      authLogger.warn('Login blocked: too many attempts', { data: { ip } })
       return jsonError(c, 'Too many login attempts, try again later', 429)
+    }
     const { password } = loginSchema.parse(await bodyJson(c))
     if (!services.auth.verifyPassword(password)) {
-      loginAttempts.set(ip, { count: attempt?.reset && attempt.reset > now ? attempt.count + 1 : 1, reset: now + 15 * 60_000 })
+      const count = attempt?.reset && attempt.reset > now ? attempt.count + 1 : 1
+      loginAttempts.set(ip, { count, reset: now + 15 * 60_000 })
+      authLogger.warn('Login failed: wrong password', { data: { ip, attempts: count } })
       return jsonError(c, 'Invalid password', 401)
     }
     loginAttempts.delete(ip)
+    authLogger.info('Logged in', { data: { ip, userAgent: c.req.header('user-agent') } })
     setCookie(c, AUTH_COOKIE, services.auth.createToken(), {
       httpOnly: true,
       sameSite: 'Strict',
@@ -74,6 +89,7 @@ export function createApi(services: AppServices) {
   })
   api.post('/auth/logout', (c) => {
     deleteCookie(c, AUTH_COOKIE, { path: services.config.basePath })
+    authLogger.info('Logged out', { data: { ip: clientIp(c) } })
     return c.json({ ok: true })
   })
 
@@ -86,6 +102,8 @@ export function createApi(services: AppServices) {
 
   api.get('/events', (c) => {
     return streamSSE(c, async (stream) => {
+      const ip = clientIp(c)
+      logger.debug('Realtime client connected', { data: { ip, clients: services.events.size + 1 } })
       await stream.writeSSE({ event: 'message', data: JSON.stringify({
         type: 'snapshot',
         tasks: services.queue.list(),
@@ -100,6 +118,7 @@ export function createApi(services: AppServices) {
       finally {
         clearInterval(ping)
         unsubscribe()
+        logger.debug('Realtime client disconnected', { data: { ip, clients: services.events.size } })
       }
     })
   })
@@ -108,7 +127,7 @@ export function createApi(services: AppServices) {
     const request = infoRequestSchema.parse(await bodyJson(c))
     const url = await validateExternalUrl(request.url)
     // Kill yt-dlp when the browser stops waiting (canceled preview / left the page)
-    return c.json(await services.info.get(url, { flat: request.flat ?? true, cookies: request.cookies, signal: c.req.raw.signal }))
+    return c.json(await services.info.get(url, { flat: request.flat ?? true, cookies: request.cookies, signal: c.req.raw.signal, origin: 'preview' }))
   })
 
   api.get('/tasks', c => c.json(services.queue.list()))
@@ -220,6 +239,24 @@ export function createApi(services: AppServices) {
     return new Response(body, { status, headers })
   })
 
+  api.get('/logs', (c) => {
+    return c.json(services.logs.query(logQuerySchema.parse(c.req.query())))
+  })
+  api.get('/logs/export', (c) => {
+    const { before: _, limit: __, ...filter } = logQuerySchema.parse(c.req.query())
+    const stamp = new Date().toISOString().slice(0, 19).replace(/\D/g, '')
+    return c.body(`${services.logs.export(filter)}\n`, 200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Content-Disposition': `attachment; filename="yt-dlp-studio-${stamp}.log"`,
+      'Cache-Control': 'no-store',
+    })
+  })
+  api.delete('/logs', async (c) => {
+    await services.logs.clear()
+    logger.info('Logs cleared', { data: { ip: clientIp(c) } })
+    return c.json({ ok: true })
+  })
+
   api.get('/settings', c => c.json(services.settings.toPublic()))
   api.put('/settings', async c => c.json(await services.settings.update(await bodyJson(c))))
   api.get('/system', async c => c.json(await services.system.info()))
@@ -253,6 +290,7 @@ export function createApi(services: AppServices) {
     if (services.auth.enabled && !services.auth.verifyPassword(current ?? ''))
       return jsonError(c, 'Current password is incorrect', 403)
     await services.auth.setPassword(password)
+    authLogger.info(password ? 'Access password changed' : 'Access password removed', { data: { ip: clientIp(c) } })
     services.settings.broadcast()
     if (password)
       setCookie(c, AUTH_COOKIE, services.auth.createToken(), { httpOnly: true, sameSite: 'Strict', path: services.config.basePath, maxAge: 365 * 24 * 60 * 60 })

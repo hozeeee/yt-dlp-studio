@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
-import { Download, FolderOpen, ListVideo, Menu, Moon, Settings, Sun, Tv, X } from 'lucide-react'
+import { Download, FolderOpen, ListVideo, Menu, Moon, ScrollText, Settings, Sun, Tv, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { useEffect } from 'react'
 import { NavLink, Outlet } from 'react-router'
@@ -15,6 +15,7 @@ const NAV: NavItem[] = [
   { to: '/tasks', label: '下载任务', icon: ListVideo },
   { to: '/library', label: '文件库', icon: FolderOpen },
   { to: '/subscriptions', label: '订阅', icon: Tv },
+  { to: '/logs', label: '日志', icon: ScrollText },
   { to: '/settings', label: '设置', icon: Settings },
 ]
 
@@ -109,7 +110,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <span className={clsx('size-2 rounded-full', connected ? 'bg-emerald-500 shadow-[0_0_0_3px_rgb(16_185_129/0.12)]' : 'bg-amber-500')} />
             {connected ? '实时连接正常' : '正在重新连接'}
           </div>
-          <div className="mt-2 text-[11px] leading-4 text-slate-400">队列、进度和订阅动态实时同步</div>
+          <div className="mt-2 text-[11px] leading-4 text-slate-400">队列、进度、订阅和日志实时同步</div>
         </div>
       </div>
     </>
@@ -119,7 +120,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 function BottomNav() {
   const setupNeeded = useSetupNeeded()
   return (
-    <nav className="fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-30 grid grid-cols-5 rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-float backdrop-blur-xl dark:border-white/10 dark:bg-[#171a22]/95 lg:hidden">
+    <nav className="fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-30 grid grid-cols-6 rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-float backdrop-blur-xl dark:border-white/10 dark:bg-[#171a22]/95 lg:hidden">
       {NAV.map(({ to, label, icon: Icon }) => (
         <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => clsx('relative flex min-w-0 flex-col items-center gap-1 rounded-xl py-2 text-[10px] font-medium', isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/12 dark:text-brand-300' : 'text-slate-500 dark:text-slate-400')}>
           <Icon size={18} />

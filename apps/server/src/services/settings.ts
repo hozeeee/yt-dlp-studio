@@ -5,7 +5,12 @@ import path from 'node:path'
 import { DEFAULT_SETTINGS } from '@yt-dlp-studio/shared'
 import { mergeDownloadOptions, settingsUpdateSchema } from '../schemas'
 import { ensureDir } from '../utils/fs'
+import { createLogger } from '../utils/logger'
 import { JsonStore } from './store'
+
+const logger = createLogger('system')
+/** Values never written to the logs */
+const SECRET_KEYS = new Set<string>(['proxy', 'globalArgs', 'userAgent'])
 
 export class SettingsService {
   private store: JsonStore<Partial<AppSettings>>
@@ -63,6 +68,17 @@ export class SettingsService {
     if (this.current.downloadDir !== prev.downloadDir)
       await ensureDir(this.current.downloadDir)
     await this.store.flush()
+
+    const changed = (Object.keys(this.current) as (keyof AppSettings)[])
+      .filter(key => JSON.stringify(this.current[key]) !== JSON.stringify(prev[key]))
+    if (changed.length) {
+      const data: Record<string, string | number | boolean> = {}
+      for (const key of changed) {
+        const value = this.current[key]
+        data[key] = SECRET_KEYS.has(key) ? (value ? '(set)' : '(empty)') : typeof value === 'object' ? 'changed' : value
+      }
+      logger.info(`Settings updated: ${changed.join(', ')}`, { data })
+    }
 
     for (const listener of this.listeners)
       listener(this.current, prev)

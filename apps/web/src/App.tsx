@@ -7,6 +7,7 @@ import { ToastViewport } from './components/ToastViewport'
 import { DownloadPage } from './pages/DownloadPage'
 import { LibraryPage } from './pages/LibraryPage'
 import { LoginPage } from './pages/LoginPage'
+import { LogsPage } from './pages/LogsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { SubscriptionsPage } from './pages/SubscriptionsPage'
 import { TasksPage } from './pages/TasksPage'
@@ -46,6 +47,7 @@ export function App() {
           <Route path="tasks" element={<TasksPage />} />
           <Route path="library" element={<LibraryPage />} />
           <Route path="subscriptions" element={<SubscriptionsPage />} />
+          <Route path="logs" element={<LogsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

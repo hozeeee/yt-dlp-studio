@@ -4,6 +4,7 @@ import { AuthService } from './auth'
 import { CookieService } from './cookies'
 import { EventBus } from './events'
 import { LibraryService } from './library'
+import { LogService } from './logs'
 import { SettingsService } from './settings'
 import { SubscriptionService } from './subscriptions'
 import { SystemService } from './system'
@@ -13,6 +14,7 @@ import { DownloadQueue } from './ytdlp/queue'
 
 export class AppServices {
   readonly events = new EventBus()
+  readonly logs: LogService
   readonly auth: AuthService
   readonly settings: SettingsService
   readonly binaries: BinaryManager
@@ -24,6 +26,7 @@ export class AppServices {
   readonly system: SystemService
 
   constructor(readonly config: ServerConfig) {
+    this.logs = new LogService(config.dataDir, this.events)
     this.auth = new AuthService(config)
     this.settings = new SettingsService(config, this.events, () => this.auth.enabled)
     this.binaries = new BinaryManager(config.dataDir, this.settings, this.events)
@@ -37,6 +40,8 @@ export class AppServices {
 
   async init() {
     await ensureDir(this.config.dataDir)
+    // First, so the other services can log while starting
+    await this.logs.init()
     await this.auth.init()
     await this.settings.init()
     await this.cookies.init()
@@ -50,5 +55,6 @@ export class AppServices {
       this.subscriptions.shutdown(),
       this.settings.flush(),
     ])
+    await this.logs.shutdown()
   }
 }

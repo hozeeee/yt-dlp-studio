@@ -1,7 +1,7 @@
 import { readJson, writeFileAtomic } from '../utils/fs'
 import { createLogger } from '../utils/logger'
 
-const logger = createLogger('store')
+const logger = createLogger('system')
 
 /**
  * A tiny JSON file backed store. Writes are debounced and atomic,
@@ -23,7 +23,7 @@ export class JsonStore<T> {
         this.data = normalize ? normalize(raw) : raw
     }
     catch (error) {
-      logger.error(`Failed to read ${this.file}, using defaults`, error)
+      logger.error(`Failed to read ${this.file}, using defaults`, { error })
     }
     return this.data
   }
@@ -45,7 +45,7 @@ export class JsonStore<T> {
     const content = JSON.stringify(this.data, null, 2)
     this.pending = this.pending
       .then(() => writeFileAtomic(this.file, content))
-      .catch(error => logger.error(`Failed to write ${this.file}`, error))
+      .catch(error => logger.error(`Failed to write ${this.file}`, { error }))
     await this.pending
   }
 }
