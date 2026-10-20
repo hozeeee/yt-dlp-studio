@@ -25,7 +25,7 @@ export function HelpTip({ children, label = '帮助', width = 'w-80' }: { childr
         onPointerEnter={hover(true)}
         onPointerLeave={hover(false)}
       >
-        <CircleHelp size={16} />
+        <CircleHelp size={15} />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
@@ -35,10 +35,10 @@ export function HelpTip({ children, label = '帮助', width = 'w-80' }: { childr
           collisionPadding={12}
           onPointerEnter={hover(true)}
           onPointerLeave={hover(false)}
-          className={`animate-pop-in z-[70] max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-600 shadow-float outline-none dark:border-white/10 dark:bg-[#1a1e27] dark:text-slate-300 ${width}`}
+          className={`animate-pop-in z-[70] max-w-[calc(100vw-1.5rem)] rounded-lg border border-slate-200 bg-white p-3 text-[13px] leading-5 text-slate-600 shadow-float outline-none dark:border-white/10 dark:bg-[#1a1d24] dark:text-slate-300 ${width}`}
         >
           {children}
-          <Popover.Arrow className="fill-white dark:fill-[#1a1e27]" />
+          <Popover.Arrow className="fill-white dark:fill-[#1a1d24]" />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

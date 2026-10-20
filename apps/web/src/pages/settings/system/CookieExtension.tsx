@@ -8,10 +8,10 @@ import { formatBytes } from '../../../lib/format'
 export function ExtensionLinks() {
   const [offline, setOffline] = useState(false)
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200/70 bg-slate-50/70 p-4 sm:flex-row sm:items-center dark:border-white/7 dark:bg-white/3">
+    <div className="surface-muted flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
       <div className="flex min-w-0 flex-1 items-start gap-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"><Puzzle size={18} /></div>
-        <div className="min-w-0 text-sm">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"><Puzzle size={16} /></div>
+        <div className="min-w-0 text-[13px]">
           <div className="font-medium text-slate-800 dark:text-slate-100">还没有 cookies.txt？</div>
           <div className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
             安装开源插件 Get cookies.txt LOCALLY，在已登录的网站上一键导出。打不开扩展商店时可使用离线安装包。
@@ -19,15 +19,15 @@ export function ExtensionLinks() {
           </div>
         </div>
       </div>
-      <div className="flex shrink-0 flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap gap-1.5">
         {EXTENSIONS.map(item => (
-          <a key={item.href} className="btn-secondary py-2 text-xs" href={item.href} target="_blank" rel="noreferrer">
-            <ExternalLink size={14} />
+          <a key={item.href} className="btn-secondary btn-sm" href={item.href} target="_blank" rel="noreferrer">
+            <ExternalLink />
             {item.label}
           </a>
         ))}
-        <button className="btn-secondary py-2 text-xs" onClick={() => setOffline(true)}>
-          <PackageOpen size={14} />
+        <button className="btn-secondary btn-sm" onClick={() => setOffline(true)}>
+          <PackageOpen />
           离线安装
         </button>
       </div>
@@ -45,7 +45,7 @@ function OfflineInstallModal({ open, onClose }: { open: boolean, onClose: () => 
       description={`安装包已内置在 yt-dlp Studio 中（v${OFFLINE_VERSION}），无需访问扩展商店。`}
       footer={<button className="btn-secondary" onClick={onClose}>关闭</button>}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         <OfflineCard
           title="Chrome / Edge 等 Chromium 内核浏览器"
           {...OFFLINE_PACKAGES.chrome}
@@ -82,18 +82,18 @@ function OfflineInstallModal({ open, onClose }: { open: boolean, onClose: () => 
 
 function OfflineCard({ title, file, size, note, children }: { title: string, file: string, size: number, note?: string, children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-slate-200/70 p-4 dark:border-white/8">
+    <section className="flex flex-col gap-2.5 rounded-lg border border-slate-200/80 p-3 dark:border-white/8">
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium text-slate-800 dark:text-slate-100">{title}</div>
+          <div className="text-[13px] font-medium text-slate-800 dark:text-slate-100">{title}</div>
           <div className="truncate text-xs text-slate-400" title={file}>{`${file} · ${formatBytes(size)}`}</div>
         </div>
-        <a className="btn-primary py-2 text-xs" href={offlineUrl(file)} download={file}>
-          <Download size={14} />
+        <a className="btn-primary btn-sm" href={offlineUrl(file)} download={file}>
+          <Download />
           下载安装包
         </a>
       </div>
-      <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm leading-6 text-slate-600 dark:text-slate-300">
+      <ol className="flex list-decimal flex-col gap-1 pl-5 text-[13px] leading-6 text-slate-600 dark:text-slate-300">
         {children}
       </ol>
       {note && <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">{note}</p>}

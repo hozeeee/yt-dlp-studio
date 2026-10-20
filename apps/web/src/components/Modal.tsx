@@ -32,21 +32,21 @@ export function Modal({ open, onClose, title, description, children, footer, siz
         <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-5">
           <Dialog.Content
             className={clsx(
-              'animate-dialog-in pointer-events-auto flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-slate-200/70 bg-white shadow-float outline-none dark:border-white/10 dark:bg-[#151820] sm:max-h-[min(88dvh,56rem)] sm:rounded-2xl',
+              'animate-dialog-in pointer-events-auto flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-slate-200/70 bg-white shadow-float outline-none dark:border-white/10 dark:bg-[#15171d] sm:max-h-[min(88dvh,56rem)] sm:rounded-xl',
               SIZES[size],
             )}
           >
-            <header className="flex shrink-0 items-start gap-4 border-b border-slate-100 px-5 py-4 dark:border-white/7 sm:px-6">
+            <header className="flex shrink-0 items-start gap-3 border-b border-slate-100 px-4 py-3 dark:border-white/7 sm:px-5">
               <div className="min-w-0 flex-1">
-                <Dialog.Title className="truncate text-lg font-semibold text-slate-950 dark:text-white">{title}</Dialog.Title>
+                <Dialog.Title className="truncate text-[15px] leading-6 font-semibold text-slate-950 dark:text-white">{title}</Dialog.Title>
                 {description
-                  ? <Dialog.Description className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{description}</Dialog.Description>
+                  ? <Dialog.Description className="text-[13px] text-slate-500 dark:text-slate-400">{description}</Dialog.Description>
                   : <Dialog.Description className="sr-only">{title}</Dialog.Description>}
               </div>
-              <Dialog.Close className="icon-btn -mt-1 -mr-2 shrink-0" aria-label="关闭"><X size={18} /></Dialog.Close>
+              <Dialog.Close className="icon-btn -mr-1.5 shrink-0" aria-label="关闭"><X /></Dialog.Close>
             </header>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
-            {footer && <footer className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-100 px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-white/7 sm:px-6 sm:pb-4">{footer}</footer>}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">{children}</div>
+            {footer && <footer className="flex shrink-0 flex-wrap justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-white/7 dark:bg-white/2 sm:px-5 sm:pb-3">{footer}</footer>}
           </Dialog.Content>
         </div>
       </Dialog.Portal>

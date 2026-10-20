@@ -22,9 +22,9 @@ export function BinaryJobIndicator({ className }: { className?: string }) {
             key={job.id}
             to="/settings?tab=system"
             title="查看安装详情"
-            className="flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 transition hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-300 dark:hover:bg-brand-500/15"
+            className="flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 transition hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-300 dark:hover:bg-brand-500/15"
           >
-            <Loader2 size={13} className="animate-spin" />
+            <Loader2 size={12} className="animate-spin" />
             <span className="hidden sm:inline">{`正在${actionLabel(job.action)} `}</span>
             {BINARY_LABELS[job.binary]}
             {percent != null && <span className="tabular-nums">{`${Math.floor(percent)}%`}</span>}

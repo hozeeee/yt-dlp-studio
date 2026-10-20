@@ -14,6 +14,8 @@ import { toast } from '../stores/toast'
 
 type Filter = 'active' | 'completed' | 'failed' | 'all'
 
+const FILTER_LABELS: Record<Filter, string> = { active: '进行中', completed: '已完成', failed: '失败', all: '全部' }
+
 export function TasksPage() {
   const tasks = useAppStore(state => state.tasks)
   const [filter, setFilter] = useState<Filter>('active')
@@ -52,34 +54,36 @@ export function TasksPage() {
         icon={ListVideo}
         actions={(
           <button className="btn-secondary" onClick={clear}>
-            <Trash2 size={16} />
+            <Trash2 />
             清理记录
           </button>
         )}
       />
-      <YtdlpRequired className="mb-5" />
-      <div className="surface mb-5 flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
-        <div className="flex gap-1 overflow-x-auto">
-          {(['active', 'completed', 'failed', 'all'] as Filter[]).map(item => (
-            <button key={item} onClick={() => setFilter(item)} className={clsx('shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition', filter === item ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/6')}>
-              {{ active: '进行中', completed: '已完成', failed: '失败', all: '全部' }[item]}
-              {' '}
-              <span className="ml-1 opacity-60">{counts[item]}</span>
-            </button>
-          ))}
+      <YtdlpRequired className="mb-4" />
+      <div className="surface overflow-hidden">
+        <div className="flex flex-col gap-2 border-b border-slate-200/80 p-2.5 sm:flex-row sm:items-center dark:border-white/8">
+          <div className="segmented">
+            {(Object.keys(FILTER_LABELS) as Filter[]).map(item => (
+              <button key={item} data-active={filter === item} className="segmented-item" onClick={() => setFilter(item)}>
+                {FILTER_LABELS[item]}
+                <span className="count-badge">{counts[item]}</span>
+              </button>
+            ))}
+          </div>
+          <div className="relative w-full sm:ml-auto sm:max-w-64">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-slate-400" size={14} />
+            <input className="input-base pl-8" value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索任务" />
+          </div>
         </div>
-        <div className="relative ml-auto w-full sm:max-w-xs">
-          <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={16} />
-          <input className="input-base py-2 pl-9" value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索任务" />
-        </div>
+        {filtered.length
+          ? <div className="divide-y divide-slate-100 dark:divide-white/6">{filtered.map(task => <TaskRow key={task.id} task={task} />)}</div>
+          : <EmptyState icon={ListVideo} title="这里还没有任务" description={filter === 'active' ? '新建下载后，任务会显示在这里并自动开始。' : '当前筛选条件下没有任务记录。'} />}
       </div>
-
-      {filtered.length ? <div className="space-y-3">{filtered.map(task => <TaskCard key={task.id} task={task} />)}</div> : <div className="surface"><EmptyState icon={ListVideo} title="这里还没有任务" description={filter === 'active' ? '新建下载后，任务会显示在这里并自动开始。' : '当前筛选条件下没有任务记录。'} /></div>}
     </div>
   )
 }
 
-function TaskCard({ task }: { task: DownloadTask }) {
+function TaskRow({ task }: { task: DownloadTask }) {
   const active = ['queued', 'downloading', 'processing', 'paused'].includes(task.status)
   const ready = useYtdlpReady()
 
@@ -105,87 +109,85 @@ function TaskCard({ task }: { task: DownloadTask }) {
 
   const firstFile = task.files[0]
   return (
-    <article className="surface overflow-hidden p-4 sm:p-5">
-      <div className="flex gap-4">
-        <div className="relative hidden aspect-video w-36 shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-white/5 sm:block">
-          {task.thumbnail ? <img src={task.thumbnail} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : <div className="flex h-full items-center justify-center text-slate-300"><Download size={25} /></div>}
-          <span className="absolute right-1.5 bottom-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[9px] font-semibold text-white uppercase">{task.options.kind}</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1">
-              <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100" title={task.title}>{task.title}</h3>
-              <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                <StatusBadge status={task.status} />
-                {task.uploader && (
-                  <>
-                    <span>·</span>
-                    <span className="truncate">{task.uploader}</span>
-                  </>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 gap-1">
-              {task.status === 'downloading' || task.status === 'processing' || task.status === 'queued' ? <button className="icon-btn" title="暂停" onClick={() => action('pause')}><Pause size={17} /></button> : null}
-              {task.status === 'paused' && <button className="icon-btn" title={ready ? '继续' : '需要先安装 yt-dlp'} disabled={!ready} onClick={() => action('resume')}><Play size={17} /></button>}
-              {['failed', 'canceled'].includes(task.status) && <button className="icon-btn" title={ready ? '重试' : '需要先安装 yt-dlp'} disabled={!ready} onClick={() => action('retry')}><RotateCcw size={17} /></button>}
-              {active && <button className="icon-btn" title="取消" onClick={() => action('cancel')}><CircleX size={17} /></button>}
-              {!active && <button className="icon-btn" title="移除记录" onClick={remove}><Trash2 size={17} /></button>}
-            </div>
-          </div>
-
-          {active && (
-            <div className="mt-4">
-              <div className="mb-2 flex items-center justify-between text-[11px] text-slate-400">
-                <span>{task.progress.stage || (task.status === 'queued' ? '等待下载' : '正在下载')}</span>
-                <span>
-                  {task.progress.percent.toFixed(1)}
-                  %
-                </span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-white/7"><div className={clsx('h-full rounded-full transition-all duration-500', task.status === 'paused' ? 'bg-amber-400' : 'bg-brand-500')} style={{ width: `${Math.max(task.status === 'queued' ? 1 : 0, task.progress.percent)}%` }} /></div>
-              <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-400">
-                <span>
-                  {formatBytes(task.progress.downloaded)}
-                  {' '}
-                  /
-                  {' '}
-                  {formatBytes(task.progress.total)}
-                </span>
-                <span>{formatSpeed(task.progress.speed)}</span>
-                <span>
-                  剩余
-                  {formatEta(task.progress.eta)}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {task.status === 'completed' && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-              <span>{formatBytes(task.size)}</span>
-              <span>·</span>
-              <span>
-                {task.files.length}
-                {' '}
-                个文件
-              </span>
-              {firstFile && (
+    <article className="flex gap-3 px-3 py-3 transition hover:bg-slate-50/70 sm:px-4 dark:hover:bg-white/2">
+      <div className="relative hidden aspect-video w-28 shrink-0 self-start overflow-hidden rounded-md bg-slate-100 sm:block dark:bg-white/5">
+        {task.thumbnail ? <img src={task.thumbnail} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : <div className="flex h-full items-center justify-center text-slate-300 dark:text-slate-600"><Download size={20} /></div>}
+        <span className="absolute right-1 bottom-1 rounded-sm bg-black/70 px-1 py-px text-[9px] font-semibold text-white uppercase">{task.options.kind}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-[13px] leading-5 font-medium text-slate-900 dark:text-slate-100" title={task.title}>{task.title}</h3>
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
+              <StatusBadge status={task.status} />
+              {task.uploader && (
                 <>
-                  <a className="btn-ghost ml-auto px-2.5 py-1.5" href={libraryUrl(firstFile)} target="_blank" rel="noreferrer">
-                    <Play size={14} />
-                    预览
-                  </a>
-                  <a className="btn-ghost px-2.5 py-1.5" href={libraryUrl(firstFile, true)}>
-                    <Download size={14} />
-                    下载
-                  </a>
+                  <span>·</span>
+                  <span className="truncate">{task.uploader}</span>
                 </>
               )}
             </div>
-          )}
-          {task.error && <div className="mt-3 line-clamp-3 rounded-lg bg-red-50 px-3 py-2 font-mono text-[11px] leading-5 text-red-600 dark:bg-red-500/8 dark:text-red-400" title={task.error}>{task.error}</div>}
+          </div>
+          <div className="-my-1 -mr-1 flex shrink-0">
+            {task.status === 'downloading' || task.status === 'processing' || task.status === 'queued' ? <button className="icon-btn" title="暂停" onClick={() => action('pause')}><Pause /></button> : null}
+            {task.status === 'paused' && <button className="icon-btn" title={ready ? '继续' : '需要先安装 yt-dlp'} disabled={!ready} onClick={() => action('resume')}><Play /></button>}
+            {['failed', 'canceled'].includes(task.status) && <button className="icon-btn" title={ready ? '重试' : '需要先安装 yt-dlp'} disabled={!ready} onClick={() => action('retry')}><RotateCcw /></button>}
+            {active && <button className="icon-btn" title="取消" onClick={() => action('cancel')}><CircleX /></button>}
+            {!active && <button className="icon-btn" title="移除记录" onClick={remove}><Trash2 /></button>}
+          </div>
         </div>
+
+        {active && (
+          <div className="mt-2.5">
+            <div className="flex items-center gap-3">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/7"><div className={clsx('h-full rounded-full transition-all duration-500', task.status === 'paused' ? 'bg-amber-400' : 'bg-brand-500')} style={{ width: `${Math.max(task.status === 'queued' ? 1 : 0, task.progress.percent)}%` }} /></div>
+              <span className="w-12 text-right text-[11px] font-medium text-slate-500 tabular-nums dark:text-slate-400">
+                {task.progress.percent.toFixed(1)}
+                %
+              </span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-slate-400 tabular-nums">
+              <span>{task.progress.stage || (task.status === 'queued' ? '等待下载' : '正在下载')}</span>
+              <span>
+                {formatBytes(task.progress.downloaded)}
+                {' '}
+                /
+                {' '}
+                {formatBytes(task.progress.total)}
+              </span>
+              <span>{formatSpeed(task.progress.speed)}</span>
+              <span>
+                剩余
+                {formatEta(task.progress.eta)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {task.status === 'completed' && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
+            <span>{formatBytes(task.size)}</span>
+            <span>·</span>
+            <span>
+              {task.files.length}
+              {' '}
+              个文件
+            </span>
+            {firstFile && (
+              <div className="-my-1 ml-auto flex gap-0.5">
+                <a className="btn-ghost btn-sm" href={libraryUrl(firstFile)} target="_blank" rel="noreferrer">
+                  <Play />
+                  预览
+                </a>
+                <a className="btn-ghost btn-sm" href={libraryUrl(firstFile, true)}>
+                  <Download />
+                  下载
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+        {task.error && <div className="mt-2 line-clamp-2 rounded-md bg-red-50 px-2 py-1.5 font-mono text-[11px] leading-[18px] text-red-600 dark:bg-red-500/8 dark:text-red-400" title={task.error}>{task.error}</div>}
       </div>
     </article>
   )

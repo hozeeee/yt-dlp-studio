@@ -50,14 +50,14 @@ export function SubscriptionsPage() {
         icon={Tv}
         actions={(
           <button className="btn-primary" disabled={!ready} onClick={() => setOpen(true)}>
-            <Plus size={16} />
+            <Plus />
             添加订阅
           </button>
         )}
       />
-      <YtdlpRequired feature="订阅" className="mb-5" />
+      <YtdlpRequired feature="订阅" className="mb-4" />
       {subscriptions.length
-        ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{subscriptions.map(item => <SubscriptionCard key={item.id} item={item} />)}</div>
+        ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{subscriptions.map(item => <SubscriptionCard key={item.id} item={item} />)}</div>
         : (
             <div className="surface">
               <EmptyState
@@ -66,7 +66,7 @@ export function SubscriptionsPage() {
                 description="添加频道或播放列表链接，服务器会定期检查并自动下载新内容。"
                 action={(
                   <button className="btn-primary" disabled={!ready} onClick={() => setOpen(true)}>
-                    <Plus size={16} />
+                    <Plus />
                     添加第一个订阅
                   </button>
                 )}
@@ -84,7 +84,7 @@ export function SubscriptionsPage() {
           <>
             <button className="btn-secondary" onClick={() => setOpen(false)}>取消</button>
             <button type="submit" form="subscription-form" className="btn-primary" disabled={!url || saving || !ready}>
-              {saving ? <Spinner className="size-4 text-white" /> : <Check size={16} />}
+              {saving ? <Spinner className="size-3.5 text-white" /> : <Check />}
               创建订阅
             </button>
           </>
@@ -92,7 +92,7 @@ export function SubscriptionsPage() {
       >
         <form
           id="subscription-form"
-          className="flex flex-col gap-5"
+          className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault()
             if (url && !saving && ready)
@@ -103,18 +103,18 @@ export function SubscriptionsPage() {
             <span className="field-label">频道或播放列表链接</span>
             <input className="input-base" value={url} onChange={event => setUrl(event.target.value)} placeholder="https://www.youtube.com/@channel/videos" autoFocus />
           </label>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <label>
               <span className="field-label">检查间隔（分钟）</span>
               <input className="input-base" type="number" min="5" value={interval} onChange={event => setInterval(Math.max(5, Number(event.target.value)))} />
             </label>
             <div>
               <span className="field-label">首次添加</span>
-              <div className="flex h-11 items-center"><Switch checked={downloadExisting} onChange={setDownloadExisting} label="立即下载已有条目" /></div>
+              <div className="flex h-8 items-center"><Switch checked={downloadExisting} onChange={setDownloadExisting} label="立即下载已有条目" /></div>
             </div>
           </div>
-          <div className="border-t border-slate-100 pt-5 dark:border-white/7">
-            <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-200">下载选项</h3>
+          <div className="border-t border-slate-200/80 pt-4 dark:border-white/8">
+            <h3 className="section-title mb-3">下载选项</h3>
             <DownloadOptionsForm value={options} onChange={setOptions} compact url={url.trim()} />
           </div>
         </form>
@@ -162,33 +162,33 @@ function SubscriptionCard({ item }: { item: Subscription }) {
   }
 
   return (
-    <article className="surface overflow-hidden">
-      <div className="relative aspect-[2.2/1] bg-slate-100 dark:bg-white/5">
-        {item.thumbnail ? <img src={item.thumbnail} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : <div className="flex h-full items-center justify-center text-slate-300"><Tv size={35} /></div>}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
-        <div className="absolute right-3 bottom-3 left-3"><h3 className="line-clamp-2 font-semibold text-white">{item.title}</h3></div>
+    <article className="surface flex flex-col overflow-hidden">
+      <div className="relative aspect-[2.6/1] bg-slate-100 dark:bg-white/5">
+        {item.thumbnail ? <img src={item.thumbnail} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" /> : <div className="flex h-full items-center justify-center text-slate-300 dark:text-slate-600"><Tv size={28} /></div>}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="absolute right-3 bottom-2.5 left-3"><h3 className="line-clamp-2 text-[13px] leading-5 font-semibold text-white" title={item.title}>{item.title}</h3></div>
       </div>
-      <div className="p-4">
-        <div className="mb-4 grid grid-cols-3 gap-2 text-center">
+      <div className="flex flex-1 flex-col p-3">
+        <div className="mb-3 grid grid-cols-3 divide-x divide-slate-200/80 rounded-md border border-slate-200/80 text-center dark:divide-white/8 dark:border-white/8">
           <Stat value={item.seenCount} label="已发现" />
           <Stat value={item.queuedCount} label="已入队" />
           <Stat value={`${item.interval}m`} label="间隔" />
         </div>
-        <div className="space-y-2 text-xs text-slate-400">
-          <div className="flex items-center gap-2">
-            <CalendarClock size={14} />
+        <div className="mb-3 space-y-2 text-xs text-slate-400">
+          <div className="flex items-center gap-1.5">
+            <CalendarClock size={13} />
             <span>
               上次检查：
               {formatDate(item.lastCheckedAt)}
             </span>
           </div>
-          {item.lastError && <div className="line-clamp-2 rounded-lg bg-red-50 p-2 text-red-600 dark:bg-red-500/8 dark:text-red-400">{item.lastError}</div>}
+          {item.lastError && <div className="line-clamp-2 rounded-md bg-red-50 px-2 py-1.5 text-red-600 dark:bg-red-500/8 dark:text-red-400" title={item.lastError}>{item.lastError}</div>}
         </div>
-        <div className="mt-4 flex items-center border-t border-slate-100 pt-3 dark:border-white/7">
+        <div className="mt-auto flex items-center border-t border-slate-200/80 pt-2.5 dark:border-white/8">
           <Switch checked={item.enabled} onChange={update} label={item.enabled ? '已启用' : '已暂停'} />
-          <div className="ml-auto flex gap-1">
-            <button className="icon-btn" title={ready ? '立即检查' : '需要先安装 yt-dlp'} disabled={busy || item.checking || !ready} onClick={check}><RefreshCw className={(busy || item.checking) ? 'animate-spin' : ''} size={16} /></button>
-            <button className="icon-btn text-red-500" title="删除" onClick={remove}><Trash2 size={16} /></button>
+          <div className="-mr-1 ml-auto flex">
+            <button className="icon-btn" title={ready ? '立即检查' : '需要先安装 yt-dlp'} disabled={busy || item.checking || !ready} onClick={check}><RefreshCw className={(busy || item.checking) ? 'animate-spin' : ''} /></button>
+            <button className="icon-btn text-red-500" title="删除" onClick={remove}><Trash2 /></button>
           </div>
         </div>
       </div>
@@ -198,9 +198,9 @@ function SubscriptionCard({ item }: { item: Subscription }) {
 
 function Stat({ value, label }: { value: string | number, label: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-2 dark:bg-white/4">
-      <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">{value}</div>
-      <div className="mt-0.5 text-[10px] text-slate-400">{label}</div>
+    <div className="px-2 py-1.5">
+      <div className="text-[13px] leading-5 font-semibold text-slate-800 tabular-nums dark:text-slate-200">{value}</div>
+      <div className="text-[10px] text-slate-400">{label}</div>
     </div>
   )
 }

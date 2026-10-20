@@ -5,7 +5,7 @@ export function ProgressBar({ value, tone = 'brand', className }: { value?: numb
   const color = tone === 'red' ? 'bg-red-500' : tone === 'emerald' ? 'bg-emerald-500' : 'bg-brand-500'
   return (
     <div
-      className={clsx('relative h-2 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/8', className)}
+      className={clsx('relative h-1.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-white/8', className)}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}

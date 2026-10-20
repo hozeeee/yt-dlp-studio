@@ -7,9 +7,9 @@ import { Switch } from '../../components/Switch'
 export function NetworkSettings({ value, onChange, locked }: { value: AppSettings, onChange: (value: AppSettings) => void, locked: string[] }) {
   const set = <K extends keyof AppSettings>(key: K, next: AppSettings[K]) => onChange({ ...value, [key]: next })
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Section title="网络" description="这些选项会应用到媒体解析、下载和订阅检查。">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="代理服务器" hint="支持 HTTP、HTTPS 和 SOCKS，例如 socks5://127.0.0.1:1080"><input className="input-base" value={value.proxy} onChange={event => set('proxy', event.target.value)} placeholder="留空表示直连" /></Field>
           <Field label="下载限速" hint="例如 500K、2M；留空不限速"><input className="input-base" value={value.rateLimit} onChange={event => set('rateLimit', event.target.value)} placeholder="2M" /></Field>
           <Field label="重试次数"><input className="input-base" type="number" min="0" value={value.retries} onChange={event => set('retries', Number(event.target.value))} /></Field>
@@ -18,7 +18,7 @@ export function NetworkSettings({ value, onChange, locked }: { value: AppSetting
         </div>
       </Section>
       <Section title="Cookie" description="用于需要登录、年龄验证或地区限制的内容。">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field
             label="Cookie 来源"
             hint={value.cookiesMode === 'file' && (

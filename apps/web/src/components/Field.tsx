@@ -12,7 +12,7 @@ export function Field({ label, hint, actions, children }: { label: string, hint?
           )
         : <span className="field-label">{label}</span>}
       {children}
-      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs leading-4 text-slate-400">{hint}</span>}
     </label>
   )
 }

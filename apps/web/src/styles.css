@@ -15,8 +15,8 @@
   --color-brand-800: #06488d;
   --color-brand-900: #0b3c74;
   --color-brand-950: #07264d;
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.03), 0 8px 30px rgb(15 23 42 / 0.04);
-  --shadow-float: 0 20px 60px rgb(0 0 0 / 0.16);
+  --shadow-soft: 0 1px 2px rgb(15 23 42 / 0.04);
+  --shadow-float: 0 12px 32px -4px rgb(15 23 42 / 0.16), 0 2px 6px rgb(15 23 42 / 0.06);
 }
 
 :root {
@@ -46,12 +46,13 @@ body,
 
 body {
   margin: 0;
-  background: #f6f8fb;
+  background: #f7f8fa;
   color: #172033;
+  font-size: 14px;
 }
 
 .dark body {
-  background: #0b0d12;
+  background: #0b0c10;
   color: #e8ecf3;
 }
 
@@ -72,45 +73,74 @@ button:not(:disabled),
   background: rgb(11 135 245 / 0.22);
 }
 
+/*
+ * Dense, neutral dashboard look (in the spirit of Vercel / Linear / GitHub):
+ * 32px controls, 8px radii, hairline borders and almost no shadow
+ */
 @layer components {
   .surface {
-    @apply rounded-2xl border border-slate-200/80 bg-white shadow-soft dark:border-white/8 dark:bg-[#12151c];
+    @apply rounded-xl border border-slate-200/90 bg-white shadow-soft dark:border-white/8 dark:bg-[#121419];
   }
 
   .surface-muted {
-    @apply rounded-xl border border-slate-200/70 bg-slate-50/70 dark:border-white/7 dark:bg-white/3;
+    @apply rounded-lg border border-slate-200/80 bg-slate-50/80 dark:border-white/7 dark:bg-white/3;
   }
 
   .input-base {
-    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-600;
+    @apply min-h-8 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[13px] leading-[22px] text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:ring-3 focus:ring-brand-500/12 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/4 dark:text-slate-100 dark:placeholder:text-slate-600;
   }
 
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45;
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition select-none disabled:pointer-events-none disabled:opacity-45 [&_svg]:size-[15px] [&_svg]:shrink-0;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-3.5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-brand-500 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45;
+    @apply bg-brand-600 text-white shadow-xs hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-400;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white shadow-xs hover:bg-red-700;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/9;
+    @apply border border-slate-200 bg-white text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900 dark:border-white/10 dark:bg-white/4 dark:text-slate-200 dark:hover:bg-white/8;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45 dark:text-slate-400 dark:hover:bg-white/7 dark:hover:text-slate-100;
+    @apply text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/7 dark:hover:text-slate-100;
+  }
+
+  /* Small variant for buttons inside rows, cards and toolbars */
+  .btn-sm {
+    @apply h-7 gap-1 rounded-md px-2 text-xs [&_svg]:size-3.5;
   }
 
   .icon-btn {
-    @apply inline-flex size-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:active:scale-100 dark:text-slate-400 dark:hover:bg-white/8 dark:hover:text-slate-100;
+    @apply inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:text-slate-400 dark:hover:bg-white/8 dark:hover:text-slate-100 [&_svg]:size-4;
   }
 
   .field-label {
-    @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
+    @apply mb-1 block text-[13px] font-medium text-slate-700 dark:text-slate-300;
   }
 
   .section-title {
-    @apply text-base font-semibold tracking-tight text-slate-900 dark:text-white;
+    @apply text-sm font-semibold text-slate-900 dark:text-white;
+  }
+
+  /* Segmented control: muted track, the active item (`data-active`) is raised */
+  .segmented {
+    @apply inline-flex max-w-full shrink-0 items-center gap-0.5 overflow-x-auto rounded-lg bg-slate-100 p-0.5 dark:bg-white/6;
+  }
+
+  .segmented-item {
+    @apply inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium whitespace-nowrap text-slate-500 transition hover:text-slate-900 data-[active=true]:bg-white data-[active=true]:text-slate-900 data-[active=true]:shadow-xs dark:text-slate-400 dark:hover:text-white dark:data-[active=true]:bg-white/12 dark:data-[active=true]:text-white [&_svg]:size-3.5;
+  }
+
+  .count-badge {
+    @apply rounded bg-slate-200/70 px-1 text-[11px] leading-4 font-medium text-slate-500 tabular-nums dark:bg-white/10 dark:text-slate-400;
   }
 }
 

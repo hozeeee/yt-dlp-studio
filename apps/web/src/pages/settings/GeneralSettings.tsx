@@ -9,9 +9,9 @@ import { AppearanceSection } from './AppearanceSection'
 export function GeneralSettings({ value, onChange, locked }: { value: AppSettings, onChange: (value: AppSettings) => void, locked: string[] }) {
   const set = <K extends keyof AppSettings>(key: K, next: AppSettings[K]) => onChange({ ...value, [key]: next })
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Section title="存储与队列" description="配置文件保存位置、命名规则和并发行为。">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="下载目录" hint={locked.includes('downloadDir') ? '由环境变量锁定' : '服务器上的绝对或相对路径'}><input className="input-base" disabled={locked.includes('downloadDir')} value={value.downloadDir} onChange={event => set('downloadDir', event.target.value)} /></Field>
           <Field label="最大并发下载"><input className="input-base" type="number" min="1" max="20" value={value.maxConcurrent} disabled={locked.includes('maxConcurrent')} onChange={event => set('maxConcurrent', Number(event.target.value))} /></Field>
           <OutputTemplateField label="普通输出模板" scope="single" value={value.outputTemplate} onChange={next => set('outputTemplate', next)} emptyHint={<span className="text-amber-600 dark:text-amber-400">请填写模板，或点击「常用」选择常用格式</span>} />
@@ -25,7 +25,7 @@ export function GeneralSettings({ value, onChange, locked }: { value: AppSetting
             </select>
           </Field>
         </div>
-        <div className="mt-5"><Switch checked={value.useArchive} onChange={next => set('useArchive', next)} label="使用下载归档，避免重复下载相同媒体" /></div>
+        <div className="mt-4"><Switch checked={value.useArchive} onChange={next => set('useArchive', next)} label="使用下载归档，避免重复下载相同媒体" /></div>
       </Section>
       <Section title="默认下载选项" description="新建下载和新订阅将使用这些初始值。"><DownloadOptionsForm value={value.defaultOptions} onChange={next => set('defaultOptions', next)} allowCustomArgs={value.allowCustomArgs} /></Section>
       <AppearanceSection />

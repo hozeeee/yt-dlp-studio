@@ -1,5 +1,4 @@
 import type { DownloadOptions } from '@yt-dlp-studio/shared'
-import clsx from 'clsx'
 import { ChevronDown, FileAudio, FileImage, Film, Settings2 } from 'lucide-react'
 import { CookieSelect } from './CookieSelect'
 import { Field } from './Field'
@@ -26,13 +25,13 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
 
   return (
     // Sized by its container: the form lives in a narrow sidebar, dialogs and the wide settings page
-    <div className="@container space-y-5">
+    <div className="@container space-y-4">
       <div>
         <label className="field-label">下载类型</label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="segmented grid w-full grid-cols-3">
           {kinds.map(({ id, label, icon: Icon }) => (
-            <button key={id} type="button" onClick={() => set('kind', id)} className={clsx('flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition', value.kind === id ? 'border-brand-500 bg-brand-50 text-brand-700 ring-2 ring-brand-500/10 dark:bg-brand-500/10 dark:text-brand-300' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5')}>
-              <Icon size={16} />
+            <button key={id} type="button" data-active={value.kind === id} onClick={() => set('kind', id)} className="segmented-item">
+              <Icon />
               {label}
             </button>
           ))}
@@ -40,7 +39,7 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
       </div>
 
       {value.kind === 'video' && (
-        <div className="grid gap-4 @xs:grid-cols-3">
+        <div className="grid gap-3 @xs:grid-cols-3">
           <Field label="清晰度">
             <select className="input-base" value={value.quality} onChange={event => set('quality', event.target.value as DownloadOptions['quality'])}>
               <option value="best">最佳可用</option>
@@ -85,7 +84,7 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
         </Field>
       )}
 
-      <div className="grid gap-4 @md:grid-cols-2">
+      <div className="grid gap-3 @md:grid-cols-2">
         <Field label="保存到子目录" hint="相对于下载目录">
           <input className="input-base" value={value.folder ?? ''} onChange={event => set('folder', event.target.value)} placeholder="例如：音乐/收藏" />
         </Field>
@@ -99,16 +98,16 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
       <CookieSelect value={value.cookies} onChange={next => set('cookies', next)} url={url} />
 
       {!compact && (
-        <details className="group rounded-xl border border-slate-200/80 dark:border-white/8">
-          <summary className="flex list-none items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+        <details className="group rounded-lg border border-slate-200/80 dark:border-white/8">
+          <summary className="flex h-9 list-none items-center justify-between rounded-lg px-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/3 [&::-webkit-details-marker]:hidden">
             <span className="flex items-center gap-2">
-              <Settings2 size={16} />
+              <Settings2 size={15} />
               高级选项
             </span>
-            <ChevronDown className="transition group-open:rotate-180" size={16} />
+            <ChevronDown className="text-slate-400 transition group-open:rotate-180" size={15} />
           </summary>
-          <div className="space-y-5 border-t border-slate-100 p-4 dark:border-white/7">
-            <div className="grid gap-4 @2xl:grid-cols-2">
+          <div className="space-y-4 border-t border-slate-100 p-3 dark:border-white/7">
+            <div className="grid gap-3 @2xl:grid-cols-2">
               <FormatSelectorField value={value.format ?? ''} onChange={next => set('format', next)} />
               <Field label="下载时间段" hint="需要 ffmpeg，例如 00:01:00-00:02:30">
                 <input className="input-base font-mono text-xs" value={value.section ?? ''} onChange={event => set('section', event.target.value)} placeholder="00:01:00-00:02:30" />
@@ -122,7 +121,7 @@ export function DownloadOptionsForm({ value, onChange, compact, allowCustomArgs,
             </div>
 
             {value.kind !== 'thumbnail' && (
-              <div className="grid gap-x-6 gap-y-3 @xs:grid-cols-2">
+              <div className="grid gap-x-6 gap-y-2.5 @xs:grid-cols-2">
                 <Switch checked={value.subtitles} onChange={next => set('subtitles', next)} label="下载字幕与自动字幕" />
                 <Switch checked={value.embedSubtitles} onChange={next => set('embedSubtitles', next)} label="嵌入字幕" />
                 <Switch checked={value.embedMetadata} onChange={next => set('embedMetadata', next)} label="嵌入元数据" />

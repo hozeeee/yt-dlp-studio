@@ -28,17 +28,17 @@ function ConfirmView({ options, onFinish }: { options: ConfirmOptions, onFinish:
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="animate-overlay-in fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-[2px]" />
         <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-5">
-          <AlertDialog.Content className="animate-dialog-in pointer-events-auto flex w-full flex-col gap-5 rounded-t-3xl border border-slate-200/70 bg-white p-6 shadow-float outline-none dark:border-white/10 dark:bg-[#151820] sm:max-w-md sm:rounded-2xl">
-            <div className="flex gap-4">
-              {options.danger && <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-500/10"><AlertTriangle size={19} /></div>}
+          <AlertDialog.Content className="animate-dialog-in pointer-events-auto flex w-full flex-col gap-4 rounded-t-2xl border border-slate-200/70 bg-white p-5 shadow-float outline-none dark:border-white/10 dark:bg-[#15171d] sm:max-w-md sm:rounded-xl">
+            <div className="flex gap-3">
+              {options.danger && <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-500/10"><AlertTriangle size={16} /></div>}
               <div className="min-w-0 flex-1">
-                <AlertDialog.Title className="text-base font-semibold text-slate-950 dark:text-white">{options.title}</AlertDialog.Title>
-                <AlertDialog.Description className={options.description ? 'mt-1.5 text-sm leading-6 text-slate-500 dark:text-slate-400' : 'sr-only'}>{options.description ?? options.title}</AlertDialog.Description>
+                <AlertDialog.Title className="text-[15px] leading-6 font-semibold text-slate-950 dark:text-white">{options.title}</AlertDialog.Title>
+                <AlertDialog.Description className={options.description ? 'mt-1 text-[13px] leading-5 text-slate-500 dark:text-slate-400' : 'sr-only'}>{options.description ?? options.title}</AlertDialog.Description>
               </div>
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <AlertDialog.Cancel className="btn-secondary">{options.cancelText ?? '取消'}</AlertDialog.Cancel>
-              <AlertDialog.Action className={options.danger ? 'btn-primary bg-red-600 hover:bg-red-500' : 'btn-primary'} onClick={() => onFinish(true)}>{options.confirmText ?? '确定'}</AlertDialog.Action>
+              <AlertDialog.Action className={options.danger ? 'btn-danger' : 'btn-primary'} onClick={() => onFinish(true)}>{options.confirmText ?? '确定'}</AlertDialog.Action>
             </div>
           </AlertDialog.Content>
         </div>

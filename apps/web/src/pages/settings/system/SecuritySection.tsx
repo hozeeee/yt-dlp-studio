@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { ExtendedSystemInfo } from '../../../stores/app'
 import { KeyRound, LogOut } from 'lucide-react'
 import { useState } from 'react'
@@ -7,12 +8,10 @@ import { Section } from '../../../components/Section'
 import { api, json } from '../../../lib/api'
 import { useAppStore } from '../../../stores/app'
 import { toast } from '../../../stores/toast'
-import { useUiStore } from '../../../stores/ui'
 
 export function SecuritySection({ system }: { system: ExtendedSystemInfo }) {
   const logout = useAppStore(state => state.logout)
   const authEnabled = useAppStore(state => state.settings?.authEnabled ?? false)
-  const { theme, setTheme } = useUiStore()
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
@@ -35,28 +34,20 @@ export function SecuritySection({ system }: { system: ExtendedSystemInfo }) {
   }
 
   return (
-    <Section title="界面与安全">
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="外观主题">
-          <select className="input-base" value={theme} onChange={event => setTheme(event.target.value as 'system' | 'light' | 'dark')}>
-            <option value="system">跟随系统</option>
-            <option value="light">浅色</option>
-            <option value="dark">深色</option>
-          </select>
-        </Field>
-        <div>
-          <span className="field-label">访问保护</span>
-          <button className="btn-secondary w-full" disabled={system.authLocked} onClick={() => setPasswordOpen(true)}>
-            <KeyRound size={16} />
-            {system.authLocked ? '由环境变量管理' : authEnabled ? '修改访问密码' : '设置访问密码'}
+    <Section title="访问安全" description="为 Web 界面设置访问密码，或退出当前浏览器的登录会话。">
+      <div className="divide-y divide-slate-100 dark:divide-white/6">
+        <SettingRow title="访问密码" description={system.authLocked ? '由环境变量管理，无法在此修改' : authEnabled ? '已启用，访问界面需要先登录' : '未启用，任何能访问服务的人都可以使用'}>
+          <button className="btn-secondary" disabled={system.authLocked} onClick={() => setPasswordOpen(true)}>
+            <KeyRound />
+            {authEnabled ? '修改密码' : '设置密码'}
           </button>
-        </div>
-      </div>
-      <div className="mt-5 border-t border-slate-100 pt-5 dark:border-white/7">
-        <button className="btn-secondary text-red-600" onClick={() => logout()}>
-          <LogOut size={16} />
-          退出当前会话
-        </button>
+        </SettingRow>
+        <SettingRow title="当前会话" description="退出后需要重新输入密码">
+          <button className="btn-secondary text-red-600 dark:text-red-400" onClick={() => logout()}>
+            <LogOut />
+            退出登录
+          </button>
+        </SettingRow>
       </div>
 
       <Modal
@@ -85,5 +76,17 @@ export function SecuritySection({ system }: { system: ExtendedSystemInfo }) {
         </form>
       </Modal>
     </Section>
+  )
+}
+
+function SettingRow({ title, description, children }: { title: string, description: string, children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <div className="text-[13px] font-medium text-slate-800 dark:text-slate-200">{title}</div>
+        <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</div>
+      </div>
+      {children}
+    </div>
   )
 }

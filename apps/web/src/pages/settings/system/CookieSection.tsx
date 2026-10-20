@@ -56,12 +56,12 @@ export function CookieSection({ value, onChange }: { value: AppSettings, onChang
       extra={<CookieHelp />}
       description="上传 Netscape 格式的 cookies.txt，可按网站分别上传多个文件，启用的文件会自动合并后交给 yt-dlp。"
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {value.cookiesMode !== 'file' && files.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
-            <AlertTriangle size={17} className="shrink-0" />
+          <div className="flex flex-wrap items-center gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+            <AlertTriangle size={15} className="shrink-0" />
             <span className="min-w-0 flex-1">当前「Cookie 来源」不是上传的文件，下面的文件不会被使用。</span>
-            <button className="btn-secondary py-1.5 text-xs" onClick={() => onChange({ ...value, cookiesMode: 'file' })}>改为使用上传的文件</button>
+            <button className="btn-secondary btn-sm" onClick={() => onChange({ ...value, cookiesMode: 'file' })}>改为使用上传的文件</button>
           </div>
         )}
 
@@ -69,11 +69,11 @@ export function CookieSection({ value, onChange }: { value: AppSettings, onChang
         <DropZone uploading={uploading} onFiles={upload} />
 
         {files.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between px-1 text-xs text-slate-400">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between px-0.5 text-xs text-slate-400">
               <span>{`${files.length} 个文件，已启用 ${enabled} 个`}</span>
             </div>
-            <ul className="flex flex-col gap-2">
+            <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200/80 dark:divide-white/6 dark:border-white/8">
               {files.map(file => <CookieRow key={file.id} file={file} />)}
             </ul>
           </div>
@@ -121,7 +121,7 @@ function DropZone({ uploading, onFiles }: { uploading: boolean, onFiles: (files:
   const [over, setOver] = useState(false)
   return (
     <div
-      className={clsx('flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition', over ? 'border-brand-400 bg-brand-50/60 dark:bg-brand-500/8' : 'border-slate-200 dark:border-white/10')}
+      className={clsx('flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed px-4 py-5 text-center transition', over ? 'border-brand-400 bg-brand-50/60 dark:bg-brand-500/8' : 'border-slate-300 dark:border-white/12')}
       onDragOver={(event) => {
         event.preventDefault()
         setOver(true)
@@ -146,12 +146,12 @@ function DropZone({ uploading, onFiles }: { uploading: boolean, onFiles: (files:
           event.target.value = ''
         }}
       />
-      {uploading ? <Spinner className="size-6" /> : <Upload size={22} className="text-slate-400" />}
-      <div className="text-sm text-slate-600 dark:text-slate-300">
+      {uploading ? <Spinner className="size-5" /> : <Upload size={18} className="text-slate-400" />}
+      <div className="text-[13px] text-slate-600 dark:text-slate-300">
         {uploading ? '正在上传…' : '拖放 cookies.txt 到这里，支持一次选择多个文件'}
       </div>
-      <button className="btn-secondary mt-1 py-2" disabled={uploading} onClick={() => inputRef.current?.click()}>
-        <FileText size={15} />
+      <button className="btn-secondary btn-sm mt-1" disabled={uploading} onClick={() => inputRef.current?.click()}>
+        <FileText />
         选择文件
       </button>
     </div>
@@ -182,10 +182,10 @@ function CookieRow({ file }: { file: CookieFile }) {
 
   const domains = file.domains.slice(0, 4).join('、') + (file.domains.length > 4 ? ` 等 ${file.domains.length} 个域名` : '')
   return (
-    <li className={clsx('flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 bg-white p-3 transition sm:flex-nowrap dark:border-white/8 dark:bg-white/3', !file.enabled && 'opacity-60')}>
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"><Cookie size={17} /></div>
+    <li className={clsx('flex flex-wrap items-center gap-3 bg-white px-3 py-2.5 transition sm:flex-nowrap dark:bg-white/2', !file.enabled && 'opacity-60')}>
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"><Cookie size={15} /></div>
       <div className="min-w-0 flex-1 basis-48">
-        <div className="truncate text-sm font-medium text-slate-800 dark:text-slate-100" title={file.name}>{file.name}</div>
+        <div className="truncate text-[13px] font-medium text-slate-800 dark:text-slate-100" title={file.name}>{file.name}</div>
         <div className="truncate text-xs text-slate-500 dark:text-slate-400" title={file.domains.join('\n')}>{domains || '无域名'}</div>
         <div className="mt-0.5 flex flex-wrap gap-x-3 text-[11px] text-slate-400">
           <span>{`${file.count} 条 Cookie`}</span>
@@ -196,7 +196,7 @@ function CookieRow({ file }: { file: CookieFile }) {
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <Switch checked={file.enabled} disabled={busy} onChange={next => run(() => api(`/cookies/${file.id}`, json('PATCH', { enabled: next })), '更新失败')} label={file.enabled ? '启用' : '停用'} />
-        <button className="icon-btn text-slate-400 hover:text-red-600" disabled={busy} aria-label="删除" onClick={remove}><Trash2 size={16} /></button>
+        <button className="icon-btn text-slate-400 hover:text-red-600" disabled={busy} aria-label="删除" onClick={remove}><Trash2 /></button>
       </div>
     </li>
   )

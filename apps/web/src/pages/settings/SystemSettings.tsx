@@ -7,7 +7,7 @@ import { SecuritySection } from './system/SecuritySection'
 
 export function SystemSettings({ value, onChange, system, locked }: { value: AppSettings, onChange: (value: AppSettings) => void, system: ExtendedSystemInfo, locked: string[] }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <RuntimeSection system={system} />
       <ExecutablesSection value={value} onChange={onChange} locked={locked} />
       <CookieSection value={value} onChange={onChange} />

@@ -37,33 +37,32 @@ export function LogsPage() {
         icon={ScrollText}
         actions={(
           <>
-            <button className="icon-btn" title="刷新" onClick={() => void feed.reload()} disabled={feed.loading}><RefreshCw size={17} className={feed.loading ? 'animate-spin' : undefined} /></button>
+            <button className="btn-secondary w-8 px-0" title="刷新" aria-label="刷新" onClick={() => void feed.reload()} disabled={feed.loading}><RefreshCw className={feed.loading ? 'animate-spin' : undefined} /></button>
             <a className="btn-secondary" href={logExportUrl(feed.query)} download title="按当前筛选条件导出为文本文件">
-              <FileDown size={16} />
+              <FileDown />
               导出
             </a>
             <button className="btn-secondary" onClick={clear}>
-              <Trash2 size={16} />
+              <Trash2 />
               清空
             </button>
           </>
         )}
       />
-      <LogToolbar filter={filter} onChange={setFilter} paused={feed.paused} onPausedChange={feed.setPaused} pending={feed.pending} />
-
       <div className="surface overflow-hidden">
+        <LogToolbar filter={filter} onChange={setFilter} paused={feed.paused} onPausedChange={feed.setPaused} pending={feed.pending} />
         {feed.loading && !feed.entries.length
-          ? <div className="flex min-h-72 items-center justify-center"><Spinner /></div>
+          ? <div className="flex min-h-56 items-center justify-center"><Spinner /></div>
           : feed.entries.length
             ? (
                 <>
                   <ul className="divide-y divide-slate-100 dark:divide-white/5">
                     {feed.entries.map(entry => <LogRow key={entry.id} entry={entry} />)}
                   </ul>
-                  <div className="flex items-center justify-center border-t border-slate-100 px-4 py-3 text-xs text-slate-400 dark:border-white/5">
+                  <div className="flex h-10 items-center justify-center border-t border-slate-100 px-4 text-xs text-slate-400 dark:border-white/5">
                     {feed.hasMore
                       ? (
-                          <button className="btn-ghost px-3 py-1.5 text-xs" onClick={() => void feed.loadMore()} disabled={feed.loadingMore}>
+                          <button className="btn-ghost btn-sm" onClick={() => void feed.loadMore()} disabled={feed.loadingMore}>
                             {feed.loadingMore && <Spinner className="size-3.5" />}
                             加载更早的日志
                           </button>

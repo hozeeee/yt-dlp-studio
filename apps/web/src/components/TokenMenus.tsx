@@ -4,10 +4,10 @@ import type { TokenGroup, TokenPreset } from '../lib/tokens'
 import { DropdownMenu } from 'radix-ui'
 import { Fragment, useRef } from 'react'
 
-const CONTENT_CLASS = 'animate-pop-in z-[70] max-h-[min(28rem,var(--radix-dropdown-menu-content-available-height))] w-[min(24rem,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 text-sm shadow-float outline-none dark:border-white/10 dark:bg-[#1a1e27]'
-const ITEM_CLASS = 'flex cursor-pointer flex-col gap-0.5 rounded-lg px-2.5 py-2 outline-none select-none data-highlighted:bg-slate-100 dark:data-highlighted:bg-white/7'
-const LABEL_CLASS = 'px-2.5 pt-2 pb-1 text-xs font-medium text-slate-400'
-const TRIGGER_CLASS = 'inline-flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-brand-600 disabled:pointer-events-none disabled:opacity-45 data-[state=open]:bg-brand-50 data-[state=open]:text-brand-600 dark:text-slate-400 dark:hover:bg-white/7 dark:hover:text-brand-400 dark:data-[state=open]:bg-brand-500/10 dark:data-[state=open]:text-brand-400'
+const CONTENT_CLASS = 'animate-pop-in z-[70] max-h-[min(28rem,var(--radix-dropdown-menu-content-available-height))] w-[min(24rem,calc(100vw-1.5rem))] overflow-y-auto rounded-lg border border-slate-200 bg-white p-1 text-[13px] shadow-float outline-none dark:border-white/10 dark:bg-[#1a1d24]'
+const ITEM_CLASS = 'flex cursor-pointer flex-col gap-0.5 rounded-md px-2 py-1.5 outline-none select-none data-highlighted:bg-slate-100 dark:data-highlighted:bg-white/7'
+const LABEL_CLASS = 'px-2 pt-1.5 pb-1 text-xs font-medium text-slate-400'
+const TRIGGER_CLASS = 'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-brand-600 disabled:pointer-events-none disabled:opacity-45 data-[state=open]:bg-brand-50 data-[state=open]:text-brand-600 dark:text-slate-400 dark:hover:bg-white/7 dark:hover:text-brand-400 dark:data-[state=open]:bg-brand-500/10 dark:data-[state=open]:text-brand-400'
 
 interface MenuProps {
   label: string
@@ -39,7 +39,7 @@ function Menu({ label, icon: Icon, disabled, onCloseAutoFocus, children }: Omit<
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger className={TRIGGER_CLASS} disabled={disabled}>
-        <Icon size={14} />
+        <Icon size={13} />
         {label}
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>

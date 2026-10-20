@@ -59,15 +59,15 @@ export function SettingsPage() {
         icon={Settings}
         actions={(
           <button className="btn-primary" disabled={!dirty || saving} onClick={save}>
-            {saving ? <Spinner className="size-4 text-white" /> : <Save size={16} />}
+            {saving ? <Spinner className="size-3.5 text-white" /> : <Save />}
             {saving ? '保存中…' : dirty ? '保存更改' : '已保存'}
           </button>
         )}
       />
-      <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-slate-200/80 bg-white p-1.5 dark:border-white/8 dark:bg-[#12151c]">
+      <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200/90 dark:border-white/8">
         {tabs.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setTab(id)} className={clsx('flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition', tab === id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-950' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/6')}>
-            <Icon size={16} />
+          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={clsx('-mb-px flex h-9 shrink-0 items-center gap-1.5 border-b-2 px-2.5 text-[13px] font-medium transition', tab === id ? 'border-brand-500 text-slate-900 dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white')}>
+            <Icon size={15} className={tab === id ? 'text-brand-600 dark:text-brand-400' : undefined} />
             {label}
           </button>
         ))}
@@ -76,12 +76,18 @@ export function SettingsPage() {
       {tab === 'network' && <NetworkSettings value={draft} onChange={setDraft} locked={settings.locked} />}
       {tab === 'system' && <SystemSettings value={draft} onChange={setDraft} system={system} locked={settings.locked} />}
       {dirty && (
-        <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-20 mt-6 flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50/95 p-3 shadow-lg backdrop-blur dark:border-amber-500/20 dark:bg-amber-500/10 lg:bottom-4">
-          <span className="px-2 text-sm text-amber-800 dark:text-amber-300">有尚未保存的更改</span>
-          <button className="btn-primary py-2" disabled={saving} onClick={save}>
-            <Save size={15} />
-            保存
-          </button>
+        <div className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-20 mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-white/95 py-2 pr-2 pl-3.5 shadow-float backdrop-blur lg:bottom-4 dark:border-white/10 dark:bg-[#16181e]/95">
+          <span className="flex items-center gap-2 text-[13px] text-slate-600 dark:text-slate-300">
+            <span className="size-1.5 rounded-full bg-amber-500" />
+            有尚未保存的更改
+          </span>
+          <div className="flex gap-1.5">
+            <button className="btn-ghost btn-sm" disabled={saving} onClick={() => setDraft(toEditable(settings))}>放弃</button>
+            <button className="btn-primary btn-sm" disabled={saving} onClick={save}>
+              <Save />
+              保存
+            </button>
+          </div>
         </div>
       )}
     </div>

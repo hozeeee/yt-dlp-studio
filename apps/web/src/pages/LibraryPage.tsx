@@ -87,41 +87,41 @@ export function LibraryPage() {
         actions={(
           <>
             <button className="btn-secondary" onClick={createFolder}>
-              <Plus size={16} />
+              <Plus />
               新建文件夹
             </button>
-            <button className="icon-btn" aria-label="刷新" title="刷新" onClick={() => load()}><RefreshCw size={17} /></button>
+            <button className="btn-secondary w-8 px-0" aria-label="刷新" title="刷新" onClick={() => load()}><RefreshCw /></button>
           </>
         )}
       />
       <div className="surface overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-slate-100 p-4 dark:border-white/7 sm:flex-row sm:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-sm">
-            <button className="rounded-lg px-2 py-1.5 font-medium text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10" onClick={() => load('')}>下载目录</button>
+        <div className="flex flex-col gap-2 border-b border-slate-200/80 p-2.5 sm:flex-row sm:items-center dark:border-white/8">
+          <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto text-[13px]">
+            <button className="h-7 shrink-0 rounded-md px-2 font-medium text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10" onClick={() => load('')}>下载目录</button>
             {parts.map((part, index) => (
-              <span key={parts.slice(0, index + 1).join('/')} className="flex items-center gap-1">
-                <span className="text-slate-300">/</span>
-                <button className="max-w-40 truncate rounded-lg px-2 py-1.5 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/6" onClick={() => load(parts.slice(0, index + 1).join('/'))}>{part}</button>
+              <span key={parts.slice(0, index + 1).join('/')} className="flex shrink-0 items-center gap-0.5">
+                <span className="text-slate-300 dark:text-slate-600">/</span>
+                <button className="h-7 max-w-40 truncate rounded-md px-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/6" onClick={() => load(parts.slice(0, index + 1).join('/'))}>{part}</button>
               </span>
             ))}
           </div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1 sm:w-56">
-              <Search className="absolute top-1/2 left-3 -translate-y-1/2 text-slate-400" size={15} />
-              <input className="input-base py-2 pl-9" value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索文件" />
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-slate-400" size={14} />
+              <input className="input-base pl-8" value={search} onChange={event => setSearch(event.target.value)} placeholder="搜索文件" />
             </div>
-            <div className="flex rounded-xl border border-slate-200 p-1 dark:border-white/10">
-              <button className={clsx('icon-btn size-8 rounded-lg', grid && 'bg-slate-100 text-slate-900 dark:bg-white/8 dark:text-white')} onClick={() => setGrid(true)}><Grid2X2 size={15} /></button>
-              <button className={clsx('icon-btn size-8 rounded-lg', !grid && 'bg-slate-100 text-slate-900 dark:bg-white/8 dark:text-white')} onClick={() => setGrid(false)}><List size={16} /></button>
+            <div className="segmented">
+              <button className="segmented-item px-2" data-active={grid} aria-label="网格视图" title="网格视图" onClick={() => setGrid(true)}><Grid2X2 /></button>
+              <button className="segmented-item px-2" data-active={!grid} aria-label="列表视图" title="列表视图" onClick={() => setGrid(false)}><List /></button>
             </div>
           </div>
         </div>
 
         {loading
-          ? <div className="flex min-h-80 items-center justify-center"><Spinner /></div>
+          ? <div className="flex min-h-56 items-center justify-center"><Spinner /></div>
           : entries.length
             ? (
-                <div className={clsx(grid ? 'grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6' : 'divide-y divide-slate-100 dark:divide-white/6')}>
+                <div className={clsx(grid ? 'grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8' : 'divide-y divide-slate-100 dark:divide-white/6')}>
                   {entries.map(entry => grid ? <GridItem key={entry.path} entry={entry} onOpen={() => open(entry)} onRemove={() => remove(entry)} /> : <ListItem key={entry.path} entry={entry} onOpen={() => open(entry)} onRemove={() => remove(entry)} />)}
                 </div>
               )
@@ -138,15 +138,15 @@ const COLORS = { directory: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10', v
 function GridItem({ entry, onOpen, onRemove }: { entry: LibraryEntry, onOpen: () => void, onRemove: () => void }) {
   const Icon = ICONS[entry.type]
   return (
-    <div className="group relative min-w-0 rounded-xl border border-slate-200/70 p-3 transition hover:border-brand-300 hover:shadow-sm dark:border-white/7 dark:hover:border-brand-500/40">
+    <div className="group relative min-w-0 rounded-lg border border-slate-200/80 p-2 transition hover:border-slate-300 hover:bg-slate-50/60 dark:border-white/7 dark:hover:border-white/15 dark:hover:bg-white/2">
       <button className="w-full text-left" onDoubleClick={onOpen} onClick={entry.type === 'directory' ? onOpen : undefined}>
-        <div className={clsx('mb-3 flex aspect-[4/3] items-center justify-center rounded-xl', COLORS[entry.type])}>{entry.type === 'image' ? <img src={libraryUrl(entry.path)} className="h-full w-full rounded-xl object-cover" alt="" /> : <Icon size={38} strokeWidth={1.4} />}</div>
-        <div className="truncate text-sm font-medium text-slate-800 dark:text-slate-200" title={entry.name}>{entry.name}</div>
-        <div className="mt-1 text-[11px] text-slate-400">{entry.type === 'directory' ? `${entry.children ?? '—'} 项` : formatBytes(entry.size)}</div>
+        <div className={clsx('mb-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md', COLORS[entry.type])}>{entry.type === 'image' ? <img src={libraryUrl(entry.path)} className="h-full w-full object-cover" alt="" /> : <Icon size={30} strokeWidth={1.4} />}</div>
+        <div className="truncate px-0.5 text-[13px] leading-5 font-medium text-slate-800 dark:text-slate-200" title={entry.name}>{entry.name}</div>
+        <div className="px-0.5 text-[11px] text-slate-400">{entry.type === 'directory' ? `${entry.children ?? '—'} 项` : formatBytes(entry.size)}</div>
       </button>
-      <div className="absolute top-4 right-4 flex rounded-lg bg-white/90 shadow group-focus-within:flex pointer-fine:hidden pointer-fine:group-hover:flex dark:bg-slate-900/90">
-        <button className="icon-btn size-8" onClick={onOpen} title="打开"><MoreVertical size={15} /></button>
-        <button className="icon-btn size-8 text-red-500" onClick={onRemove} title="删除"><Trash2 size={15} /></button>
+      <div className="absolute top-3 right-3 flex rounded-md border border-slate-200/80 bg-white/95 shadow-xs group-focus-within:flex pointer-fine:hidden pointer-fine:group-hover:flex dark:border-white/10 dark:bg-slate-900/95">
+        <button className="icon-btn size-7 rounded-md [&_svg]:size-3.5" onClick={onOpen} title="打开"><MoreVertical /></button>
+        <button className="icon-btn size-7 rounded-md text-red-500 [&_svg]:size-3.5" onClick={onRemove} title="删除"><Trash2 /></button>
       </div>
     </div>
   )
@@ -155,15 +155,17 @@ function GridItem({ entry, onOpen, onRemove }: { entry: LibraryEntry, onOpen: ()
 function ListItem({ entry, onOpen, onRemove }: { entry: LibraryEntry, onOpen: () => void, onRemove: () => void }) {
   const Icon = ICONS[entry.type]
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/70 dark:hover:bg-white/3">
-      <button className={clsx('flex size-10 shrink-0 items-center justify-center rounded-xl', COLORS[entry.type])} onClick={onOpen}><Icon size={20} /></button>
+    <div className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 sm:px-4 dark:hover:bg-white/2">
+      <button className={clsx('flex size-8 shrink-0 items-center justify-center rounded-md', COLORS[entry.type])} onClick={onOpen}><Icon size={16} /></button>
       <button className="min-w-0 flex-1 text-left" onClick={onOpen}>
-        <div className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{entry.name}</div>
-        <div className="mt-0.5 text-[11px] text-slate-400">{entry.type === 'directory' ? `${entry.children ?? '—'} 项` : formatBytes(entry.size)}</div>
+        <div className="truncate text-[13px] leading-5 font-medium text-slate-800 dark:text-slate-200">{entry.name}</div>
+        <div className="text-[11px] text-slate-400">{entry.type === 'directory' ? `${entry.children ?? '—'} 项` : formatBytes(entry.size)}</div>
       </button>
-      <div className="hidden text-xs text-slate-400 sm:block">{formatDate(entry.mtime)}</div>
-      <a className="icon-btn" aria-label="下载" href={libraryUrl(entry.path, true)} onClick={event => entry.type === 'directory' && event.preventDefault()}><Download size={16} /></a>
-      <button className="icon-btn text-red-500" aria-label="删除" onClick={onRemove}><Trash2 size={16} /></button>
+      <div className="hidden text-xs text-slate-400 tabular-nums sm:block">{formatDate(entry.mtime)}</div>
+      <div className="flex">
+        <a className="icon-btn" aria-label="下载" href={libraryUrl(entry.path, true)} onClick={event => entry.type === 'directory' && event.preventDefault()}><Download /></a>
+        <button className="icon-btn text-red-500" aria-label="删除" onClick={onRemove}><Trash2 /></button>
+      </div>
     </div>
   )
 }
@@ -183,24 +185,24 @@ function PreviewModal({ entry, onClose }: { entry: LibraryEntry | null, onClose:
         <>
           <button className="btn-secondary" onClick={onClose}>关闭</button>
           <a className="btn-primary" href={libraryUrl(entry.path, true)}>
-            <Download size={16} />
+            <Download />
             下载文件
           </a>
         </>
       )}
     >
-      <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-xl bg-slate-950">
+      <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-lg bg-slate-950">
         {entry.type === 'video' && <video className="max-h-[min(65vh,calc(88dvh-13rem))] w-full" src={url} controls autoPlay />}
         {entry.type === 'audio' && (
-          <div className="w-full max-w-xl p-10">
-            <div className="mx-auto mb-8 flex size-24 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-violet-600 text-white"><FileAudio size={40} /></div>
+          <div className="w-full max-w-xl p-8">
+            <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-pink-500 to-violet-600 text-white"><FileAudio size={40} /></div>
             <audio className="w-full" src={url} controls autoPlay />
           </div>
         )}
         {entry.type === 'image' && <img className="max-h-[min(65vh,calc(88dvh-13rem))] max-w-full object-contain" src={url} alt={entry.name} />}
         {!['video', 'audio', 'image'].includes(entry.type) && (
-          <div className="p-14 text-center text-slate-300">
-            <FileText className="mx-auto mb-4" size={48} />
+          <div className="p-10 text-center text-sm text-slate-300">
+            <FileText className="mx-auto mb-3" size={40} />
             <p>此文件类型不支持内嵌预览</p>
           </div>
         )}
