@@ -34,7 +34,7 @@ export class AppServices {
     this.info = new InfoService(config.dataDir, this.settings, this.binaries, this.cookies)
     this.queue = new DownloadQueue(config.dataDir, this.settings, this.events, this.binaries, this.info, this.cookies)
     this.subscriptions = new SubscriptionService(config.dataDir, this.settings, this.events, this.info, this.queue)
-    this.library = new LibraryService(this.settings)
+    this.library = new LibraryService(this.settings, () => this.queue.list())
     this.system = new SystemService(config, this.settings, this.binaries, this.cookies, this.auth)
   }
 

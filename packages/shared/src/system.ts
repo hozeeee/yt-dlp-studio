@@ -9,6 +9,10 @@ export interface LibraryEntry {
   mtime: number
   /** Number of children for directories */
   children?: number
+  /** Cover of a video / audio file: a same-named image next to it, relative to the download directory */
+  thumbnailPath?: string
+  /** Cover of a video / audio file: the remote thumbnail of the task that downloaded it, when there is no local one */
+  thumbnailUrl?: string
 }
 
 export interface LibraryListing {

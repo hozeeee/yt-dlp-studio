@@ -1,4 +1,4 @@
-import type { LibraryEntry, LibraryEntryType, LibraryListing } from '@yt-dlp-studio/shared'
+import type { DownloadTask, LibraryEntry, LibraryEntryType, LibraryListing } from '@yt-dlp-studio/shared'
 import type { SettingsService } from './settings'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -72,10 +72,25 @@ const TYPE_ORDER: Record<LibraryEntryType, number> = {
 }
 
 export class LibraryService {
-  constructor(private readonly settings: SettingsService) {}
+  /** `tasks` is used to borrow the remote thumbnail of the task that produced a file */
+  constructor(private readonly settings: SettingsService, private readonly tasks: () => DownloadTask[] = () => []) {}
 
   resolve(relative = '') {
     return resolveInside(this.settings.value.downloadDir, relative)
+  }
+
+  /** Remote thumbnail of the newest task that produced each file, keyed by library path */
+  private remoteThumbnails() {
+    const thumbnails = new Map<string, string>()
+    for (const task of this.tasks()) {
+      if (!task.thumbnail)
+        continue
+      for (const file of task.files) {
+        if (!thumbnails.has(file))
+          thumbnails.set(file, task.thumbnail)
+      }
+    }
+    return thumbnails
   }
 
   async list(relative = ''): Promise<LibraryListing> {
@@ -83,6 +98,14 @@ export class LibraryService {
     if (!dir)
       throw new Error('Invalid library path')
     const items = await fs.readdir(dir, { withFileTypes: true })
+    // `--write-thumbnail` saves the cover next to the media with the same name and an image extension
+    const images = new Map<string, string>()
+    for (const item of items) {
+      const ext = path.extname(item.name).toLowerCase()
+      if (item.isFile() && TYPES[ext] === 'image' && !item.name.startsWith('.'))
+        images.set(path.basename(item.name, path.extname(item.name)), item.name)
+    }
+    const remote = this.remoteThumbnails()
     const entries = await Promise.all(items
       .filter(item => !item.name.startsWith('.') && !item.name.endsWith('.part') && !item.name.endsWith('.ytdl'))
       .map(async (item): Promise<LibraryEntry | null> => {
@@ -105,13 +128,17 @@ export class LibraryService {
         }
         if (!item.isFile())
           return null
-        return {
-          name: item.name,
-          path: rel,
-          type: TYPES[path.extname(item.name).toLowerCase()] ?? 'other',
-          size: stat.size,
-          mtime: stat.mtimeMs,
+        const ext = path.extname(item.name)
+        const type = TYPES[ext.toLowerCase()] ?? 'other'
+        const entry: LibraryEntry = { name: item.name, path: rel, type, size: stat.size, mtime: stat.mtimeMs }
+        if (type === 'video' || type === 'audio') {
+          const image = images.get(path.basename(item.name, ext))
+          if (image)
+            entry.thumbnailPath = toPosix(path.join(path.dirname(rel), image))
+          else
+            entry.thumbnailUrl = remote.get(rel)
         }
+        return entry
       }))
     return {
       path: toPosix(path.relative(this.settings.value.downloadDir, dir)),

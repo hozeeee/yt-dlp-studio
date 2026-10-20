@@ -1,6 +1,6 @@
 import type { LibraryEntry, LibraryListing } from '@yt-dlp-studio/shared'
 import clsx from 'clsx'
-import { Download, File, FileAudio, FileImage, FileText, FileVideo, Folder, FolderOpen, Grid2X2, List, MoreVertical, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { Download, FileAudio, FileText, FolderOpen, Grid2X2, List, MoreVertical, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { Modal } from '../components/Modal'
@@ -10,6 +10,7 @@ import { api, json, libraryUrl } from '../lib/api'
 import { formatBytes, formatDate } from '../lib/format'
 import { confirmDialog, promptDialog } from '../stores/dialog'
 import { toast } from '../stores/toast'
+import { EntryCover } from './library/EntryCover'
 
 function getListing(path: string) {
   return api<LibraryListing>(`/library?path=${encodeURIComponent(path)}`)
@@ -132,15 +133,11 @@ export function LibraryPage() {
   )
 }
 
-const ICONS = { directory: Folder, video: FileVideo, audio: FileAudio, image: FileImage, subtitle: FileText, other: File }
-const COLORS = { directory: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10', video: 'text-violet-500 bg-violet-50 dark:bg-violet-500/10', audio: 'text-pink-500 bg-pink-50 dark:bg-pink-500/10', image: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10', subtitle: 'text-sky-500 bg-sky-50 dark:bg-sky-500/10', other: 'text-slate-400 bg-slate-100 dark:bg-white/5' }
-
 function GridItem({ entry, onOpen, onRemove }: { entry: LibraryEntry, onOpen: () => void, onRemove: () => void }) {
-  const Icon = ICONS[entry.type]
   return (
     <div className="group relative min-w-0 rounded-lg border border-slate-200/80 p-2 transition hover:border-slate-300 hover:bg-slate-50/60 dark:border-white/7 dark:hover:border-white/15 dark:hover:bg-white/2">
       <button className="w-full text-left" onDoubleClick={onOpen} onClick={entry.type === 'directory' ? onOpen : undefined}>
-        <div className={clsx('mb-2 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md', COLORS[entry.type])}>{entry.type === 'image' ? <img src={libraryUrl(entry.path)} className="h-full w-full object-cover" alt="" /> : <Icon size={30} strokeWidth={1.4} />}</div>
+        <EntryCover entry={entry} className="mb-2 aspect-[4/3] rounded-md" iconSize={30} badge />
         <div className="truncate px-0.5 text-[13px] leading-5 font-medium text-slate-800 dark:text-slate-200" title={entry.name}>{entry.name}</div>
         <div className="px-0.5 text-[11px] text-slate-400">{entry.type === 'directory' ? `${entry.children ?? '—'} 项` : formatBytes(entry.size)}</div>
       </button>
@@ -153,10 +150,9 @@ function GridItem({ entry, onOpen, onRemove }: { entry: LibraryEntry, onOpen: ()
 }
 
 function ListItem({ entry, onOpen, onRemove }: { entry: LibraryEntry, onOpen: () => void, onRemove: () => void }) {
-  const Icon = ICONS[entry.type]
   return (
     <div className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 sm:px-4 dark:hover:bg-white/2">
-      <button className={clsx('flex size-8 shrink-0 items-center justify-center rounded-md', COLORS[entry.type])} onClick={onOpen}><Icon size={16} /></button>
+      <button className="shrink-0" onClick={onOpen}><EntryCover entry={entry} className="h-8 w-14 rounded-md" iconSize={16} /></button>
       <button className="min-w-0 flex-1 text-left" onClick={onOpen}>
         <div className="truncate text-[13px] leading-5 font-medium text-slate-800 dark:text-slate-200">{entry.name}</div>
         <div className="text-[11px] text-slate-400">{entry.type === 'directory' ? `${entry.children ?? '—'} 项` : formatBytes(entry.size)}</div>
