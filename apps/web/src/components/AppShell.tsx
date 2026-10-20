@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import clsx from 'clsx'
-import { Download, FolderOpen, ListVideo, Menu, Moon, ScrollText, Settings, Sun, Tv, X } from 'lucide-react'
+import { Download, FolderOpen, ListVideo, Menu, ScrollText, Settings, Tv, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
 import { useEffect } from 'react'
 import { NavLink, Outlet } from 'react-router'
@@ -31,9 +31,8 @@ function useSetupNeeded() {
 }
 
 export function AppShell() {
-  const { sidebarOpen, setSidebarOpen, setTheme } = useUiStore()
+  const { sidebarOpen, setSidebarOpen } = useUiStore()
   const active = useActiveCount()
-  const dark = document.documentElement.classList.contains('dark')
 
   // The drawer is modal; make sure it never stays open (and locks scrolling) on desktop
   useEffect(() => {
@@ -66,9 +65,10 @@ export function AppShell() {
       </Dialog.Root>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/70 bg-[#f6f8fb]/85 px-4 backdrop-blur-xl dark:border-white/7 dark:bg-[#0b0d12]/85 sm:px-6 lg:px-8">
-          <button className="icon-btn lg:hidden" aria-label="打开导航" onClick={() => setSidebarOpen(true)}><Menu size={19} /></button>
-          <div className="lg:hidden"><Logo compact /></div>
+        {/* Desktop has the sidebar for branding and status, so the top bar only exists on small screens */}
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-slate-200/70 bg-[#f6f8fb]/85 px-4 backdrop-blur-xl dark:border-white/7 dark:bg-[#0b0d12]/85 sm:px-6 lg:hidden">
+          <button className="icon-btn" aria-label="打开导航" onClick={() => setSidebarOpen(true)}><Menu size={19} /></button>
+          <Logo compact />
           <div className="ml-auto flex min-w-0 items-center gap-2">
             <BinaryJobIndicator />
             {active > 0 && (
@@ -77,7 +77,6 @@ export function AppShell() {
                 {`${active} 个进行中`}
               </NavLink>
             )}
-            <button className="icon-btn" aria-label="切换主题" onClick={() => setTheme(dark ? 'light' : 'dark')}>{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
           </div>
         </header>
         <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 pt-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pb-10"><Outlet /></main>
@@ -104,7 +103,8 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto p-2">
+      <div className="mt-auto flex flex-col gap-2 p-2">
+        <BinaryJobIndicator className="flex-col items-stretch" />
         <div className="surface-muted p-3">
           <div className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
             <span className={clsx('size-2 rounded-full', connected ? 'bg-emerald-500 shadow-[0_0_0_3px_rgb(16_185_129/0.12)]' : 'bg-amber-500')} />

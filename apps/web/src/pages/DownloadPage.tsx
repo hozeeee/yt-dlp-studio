@@ -138,7 +138,7 @@ export function DownloadPage() {
           <section className="surface p-5 xl:hidden sm:p-6">{optionsPanel}</section>
         </div>
 
-        <aside className="surface sticky top-22 hidden self-start p-5 xl:block">{optionsPanel}</aside>
+        <aside className="surface sticky top-6 hidden self-start p-5 xl:block">{optionsPanel}</aside>
       </fieldset>
     </div>
   )

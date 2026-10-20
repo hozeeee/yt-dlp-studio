@@ -1,4 +1,5 @@
 import type { BinaryJob, BinaryName } from '@yt-dlp-studio/shared'
+import clsx from 'clsx'
 import { Loader2 } from 'lucide-react'
 import { Link } from 'react-router'
 import { actionLabel, BINARY_LABELS, jobPercent } from '../lib/binaries'
@@ -6,14 +7,14 @@ import { useAppStore } from '../stores/app'
 
 const NAMES: BinaryName[] = ['ytdlp', 'ffmpeg']
 
-/** Header pill for installs running in the background, visible from every page */
-export function BinaryJobIndicator() {
+/** Pill for installs running in the background, shown in the shell so it is visible from every page */
+export function BinaryJobIndicator({ className }: { className?: string }) {
   const binaries = useAppStore(state => state.system?.binaries)
   const jobs = NAMES.map(name => binaries?.[name].job).filter((job): job is BinaryJob => job?.status === 'running')
   if (!jobs.length)
     return null
   return (
-    <div className="flex items-center gap-2">
+    <div className={clsx('flex items-center gap-2', className)}>
       {jobs.map((job) => {
         const percent = jobPercent(job)
         return (

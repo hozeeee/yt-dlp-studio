@@ -4,6 +4,7 @@ import { Field } from '../../components/Field'
 import { OutputTemplateField } from '../../components/OutputTemplateField'
 import { Section } from '../../components/Section'
 import { Switch } from '../../components/Switch'
+import { AppearanceSection } from './AppearanceSection'
 
 export function GeneralSettings({ value, onChange, locked }: { value: AppSettings, onChange: (value: AppSettings) => void, locked: string[] }) {
   const set = <K extends keyof AppSettings>(key: K, next: AppSettings[K]) => onChange({ ...value, [key]: next })
@@ -27,6 +28,7 @@ export function GeneralSettings({ value, onChange, locked }: { value: AppSetting
         <div className="mt-5"><Switch checked={value.useArchive} onChange={next => set('useArchive', next)} label="使用下载归档，避免重复下载相同媒体" /></div>
       </Section>
       <Section title="默认下载选项" description="新建下载和新订阅将使用这些初始值。"><DownloadOptionsForm value={value.defaultOptions} onChange={next => set('defaultOptions', next)} allowCustomArgs={value.allowCustomArgs} /></Section>
+      <AppearanceSection />
     </div>
   )
 }
